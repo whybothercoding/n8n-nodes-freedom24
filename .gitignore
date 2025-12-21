@@ -1,2 +1,5 @@
 dist
 node_modules
+*.tar.gz
+*.tsbuildinfo
+test_workflow.json

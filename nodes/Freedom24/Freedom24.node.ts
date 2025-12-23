@@ -24,9 +24,39 @@ export class Freedom24 implements INodeType {
 			{
 				name: 'freedom24Api',
 				required: true,
+				displayOptions: {
+					show: {
+						authentication: ['apiKey'],
+					},
+				},
+			},
+			{
+				name: 'freedom24User',
+				required: true,
+				displayOptions: {
+					show: {
+						authentication: ['userLogin'],
+					},
+				},
 			},
 		],
 		properties: [
+			{
+				displayName: 'Authentication',
+				name: 'authentication',
+				type: 'options',
+				options: [
+					{
+						name: 'API Key',
+						value: 'apiKey',
+					},
+					{
+						name: 'User Login',
+						value: 'userLogin',
+					},
+				],
+				default: 'apiKey',
+			},
 			{
 				displayName: 'Resource',
 				name: 'resource',
@@ -54,7 +84,12 @@ export class Freedom24 implements INodeType {
 				noDataExpression: true,
 				displayOptions: { show: { resource: ['portfolio'] } },
 				options: [
-					{ name: 'Get All', value: 'getAll', description: 'Get current portfolio positions and account balances', action: 'Get portfolio' },
+					{
+						name: 'Get All',
+						value: 'getAll',
+						description: 'Get current portfolio positions and account balances',
+						action: 'Get portfolio',
+					},
 				],
 				default: 'getAll',
 			},
@@ -66,10 +101,30 @@ export class Freedom24 implements INodeType {
 				noDataExpression: true,
 				displayOptions: { show: { resource: ['quote'] } },
 				options: [
-					{ name: 'Get', value: 'get', description: 'Get real-time quote for a ticker', action: 'Get a quote' },
-					{ name: 'Get Many', value: 'getMany', description: 'Get real-time quotes for multiple tickers', action: 'Get many quotes' },
-					{ name: 'Get History', value: 'getHistory', description: 'Get historical OHLCV data', action: 'Get candlesticks' },
-					{ name: 'Search', value: 'search', description: 'Search for tickers', action: 'Search tickers' },
+					{
+						name: 'Get',
+						value: 'get',
+						description: 'Get real-time quote for a ticker',
+						action: 'Get a quote',
+					},
+					{
+						name: 'Get Many',
+						value: 'getMany',
+						description: 'Get real-time quotes for multiple tickers',
+						action: 'Get many quotes',
+					},
+					{
+						name: 'Get History',
+						value: 'getHistory',
+						description: 'Get historical OHLCV data',
+						action: 'Get candlesticks',
+					},
+					{
+						name: 'Search',
+						value: 'search',
+						description: 'Search for tickers',
+						action: 'Search tickers',
+					},
 				],
 				default: 'get',
 			},
@@ -81,11 +136,36 @@ export class Freedom24 implements INodeType {
 				noDataExpression: true,
 				displayOptions: { show: { resource: ['order'] } },
 				options: [
-					{ name: 'Get All', value: 'getAll', description: 'Get list of current/active orders', action: 'Get all orders' },
-					{ name: 'Place', value: 'place', description: 'Place a new order', action: 'Place an order' },
-					{ name: 'Cancel', value: 'cancel', description: 'Cancel an existing order', action: 'Cancel an order' },
-					{ name: 'Update Protection', value: 'updateProtection', description: 'Update TP/SL for a ticker', action: 'Update protection' },
-					{ name: 'Bulk Cancel', value: 'bulkCancel', description: 'Cancel multiple orders', action: 'Bulk cancel' },
+					{
+						name: 'Get All',
+						value: 'getAll',
+						description: 'Get list of current/active orders',
+						action: 'Get all orders',
+					},
+					{
+						name: 'Place',
+						value: 'place',
+						description: 'Place a new order',
+						action: 'Place an order',
+					},
+					{
+						name: 'Cancel',
+						value: 'cancel',
+						description: 'Cancel an existing order',
+						action: 'Cancel an order',
+					},
+					{
+						name: 'Update Protection',
+						value: 'updateProtection',
+						description: 'Update TP/SL for a ticker',
+						action: 'Update protection',
+					},
+					{
+						name: 'Bulk Cancel',
+						value: 'bulkCancel',
+						description: 'Cancel multiple orders',
+						action: 'Bulk cancel',
+					},
 				],
 				default: 'getAll',
 			},
@@ -97,7 +177,12 @@ export class Freedom24 implements INodeType {
 				noDataExpression: true,
 				displayOptions: { show: { resource: ['market'] } },
 				options: [
-					{ name: 'Get Status', value: 'getStatus', description: 'Get market open/close statuses', action: 'Get market status' },
+					{
+						name: 'Get Status',
+						value: 'getStatus',
+						description: 'Get market open/close statuses',
+						action: 'Get market status',
+					},
 				],
 				default: 'getStatus',
 			},
@@ -109,11 +194,48 @@ export class Freedom24 implements INodeType {
 				noDataExpression: true,
 				displayOptions: { show: { resource: ['watchlist'] } },
 				options: [
-					{ name: 'Get All', value: 'getAll', description: 'Get all saved watchlists', action: 'Get watchlists' },
-					{ name: 'Create', value: 'create', description: 'Create a new watchlist', action: 'Create watchlist' },
-					{ name: 'Delete', value: 'delete', description: 'Delete a watchlist', action: 'Delete watchlist' },
-					{ name: 'Add Ticker', value: 'addTicker', description: 'Add ticker to watchlist', action: 'Add ticker' },
-					{ name: 'Remove Ticker', value: 'removeTicker', description: 'Remove ticker from watchlist', action: 'Remove ticker' },
+					{
+						name: 'Get All',
+						value: 'getAll',
+						description: 'Get all saved watchlists',
+						action: 'Get watchlists',
+					},
+					{
+						name: 'Create',
+						value: 'create',
+						description: 'Create a new watchlist',
+						action: 'Create watchlist',
+					},
+					{
+						name: 'Update',
+						value: 'update',
+						description: 'Update a watchlist',
+						action: 'Update watchlist',
+					},
+					{
+						name: 'Delete',
+						value: 'delete',
+						description: 'Delete a watchlist',
+						action: 'Delete watchlist',
+					},
+					{
+						name: 'Select',
+						value: 'select',
+						description: 'Select a watchlist',
+						action: 'Select watchlist',
+					},
+					{
+						name: 'Add Ticker',
+						value: 'addTicker',
+						description: 'Add ticker to watchlist',
+						action: 'Add ticker',
+					},
+					{
+						name: 'Remove Ticker',
+						value: 'removeTicker',
+						description: 'Remove ticker from watchlist',
+						action: 'Remove ticker',
+					},
 				],
 				default: 'getAll',
 			},
@@ -125,8 +247,18 @@ export class Freedom24 implements INodeType {
 				noDataExpression: true,
 				displayOptions: { show: { resource: ['security'] } },
 				options: [
-					{ name: 'Get Info', value: 'getInfo', description: 'Get instrument details', action: 'Get security info' },
-					{ name: 'Get All', value: 'getAll', description: 'Query the full securities directory', action: 'Get all securities' },
+					{
+						name: 'Get Info',
+						value: 'getInfo',
+						description: 'Get instrument details',
+						action: 'Get security info',
+					},
+					{
+						name: 'Get All',
+						value: 'getAll',
+						description: 'Query the full securities directory',
+						action: 'Get all securities',
+					},
 				],
 				default: 'getInfo',
 			},
@@ -138,9 +270,24 @@ export class Freedom24 implements INodeType {
 				noDataExpression: true,
 				displayOptions: { show: { resource: ['history'] } },
 				options: [
-					{ name: 'Get Orders', value: 'getOrders', description: 'Get orders history', action: 'Get orders history' },
-					{ name: 'Get Trades', value: 'getTrades', description: 'Get trades history', action: 'Get trades history' },
-					{ name: 'Get Cashflows', value: 'getCashflows', description: 'Get cash movement history', action: 'Get cashflows' },
+					{
+						name: 'Get Orders',
+						value: 'getOrders',
+						description: 'Get orders history',
+						action: 'Get orders history',
+					},
+					{
+						name: 'Get Trades',
+						value: 'getTrades',
+						description: 'Get trades history',
+						action: 'Get trades history',
+					},
+					{
+						name: 'Get Cashflows',
+						value: 'getCashflows',
+						description: 'Get cash movement history',
+						action: 'Get cashflows',
+					},
 				],
 				default: 'getOrders',
 			},
@@ -152,8 +299,18 @@ export class Freedom24 implements INodeType {
 				noDataExpression: true,
 				displayOptions: { show: { resource: ['alert'] } },
 				options: [
-					{ name: 'Get All', value: 'getAll', description: 'List price alerts', action: 'Get alerts' },
-					{ name: 'Toggle', value: 'toggle', description: 'Create or delete a price alert', action: 'Toggle alert' },
+					{
+						name: 'Get All',
+						value: 'getAll',
+						description: 'List price alerts',
+						action: 'Get alerts',
+					},
+					{
+						name: 'Toggle',
+						value: 'toggle',
+						description: 'Create or delete a price alert',
+						action: 'Toggle alert',
+					},
 				],
 				default: 'getAll',
 			},
@@ -165,7 +322,12 @@ export class Freedom24 implements INodeType {
 				noDataExpression: true,
 				displayOptions: { show: { resource: ['fx'] } },
 				options: [
-					{ name: 'Get Rates', value: 'getRates', description: 'Get FX cross rates', action: 'Get cross rates' },
+					{
+						name: 'Get Rates',
+						value: 'getRates',
+						description: 'Get FX cross rates',
+						action: 'Get cross rates',
+					},
 				],
 				default: 'getRates',
 			},
@@ -177,7 +339,12 @@ export class Freedom24 implements INodeType {
 				noDataExpression: true,
 				displayOptions: { show: { resource: ['dynamic'] } },
 				options: [
-					{ name: 'Call', value: 'call', description: 'Call any API command', action: 'Dynamic call' },
+					{
+						name: 'Call',
+						value: 'call',
+						description: 'Call any API command',
+						action: 'Dynamic call',
+					},
 				],
 				default: 'call',
 			},
@@ -190,7 +357,16 @@ export class Freedom24 implements INodeType {
 				displayOptions: {
 					show: {
 						resource: ['quote', 'order', 'watchlist', 'security', 'alert'],
-						operation: ['get', 'getHistory', 'place', 'updateProtection', 'addTicker', 'removeTicker', 'getInfo', 'toggle'],
+						operation: [
+							'get',
+							'getHistory',
+							'place',
+							'updateProtection',
+							'addTicker',
+							'removeTicker',
+							'getInfo',
+							'toggle',
+						],
 					},
 				},
 				default: '',
@@ -212,9 +388,14 @@ export class Freedom24 implements INodeType {
 				type: 'options',
 				displayOptions: { show: { resource: ['quote'], operation: ['getHistory'] } },
 				options: [
-					{ name: '1 Minute', value: '1M' }, { name: '5 Minutes', value: '5M' }, { name: '15 Minutes', value: '15M' },
-					{ name: '30 Minutes', value: '30M' }, { name: '1 Hour', value: '1H' }, { name: '4 Hours', value: '4H' },
-					{ name: '1 Day', value: '1D' }, { name: '1 Week', value: '1W' },
+					{ name: '1 Minute', value: '1M' },
+					{ name: '5 Minutes', value: '5M' },
+					{ name: '15 Minutes', value: '15M' },
+					{ name: '30 Minutes', value: '30M' },
+					{ name: '1 Hour', value: '1H' },
+					{ name: '4 Hours', value: '4H' },
+					{ name: '1 Day', value: '1D' },
+					{ name: '1 Week', value: '1W' },
 				],
 				default: '1D',
 			},
@@ -238,7 +419,10 @@ export class Freedom24 implements INodeType {
 				name: 'side',
 				type: 'options',
 				displayOptions: { show: { resource: ['order'], operation: ['place'] } },
-				options: [ { name: 'Buy', value: 'buy' }, { name: 'Sell', value: 'sell' } ],
+				options: [
+					{ name: 'Buy', value: 'buy' },
+					{ name: 'Sell', value: 'sell' },
+				],
 				default: 'buy',
 			},
 			{
@@ -246,7 +430,10 @@ export class Freedom24 implements INodeType {
 				name: 'type',
 				type: 'options',
 				displayOptions: { show: { resource: ['order'], operation: ['place'] } },
-				options: [ { name: 'Market', value: 'market' }, { name: 'Limit', value: 'limit' } ],
+				options: [
+					{ name: 'Market', value: 'market' },
+					{ name: 'Limit', value: 'limit' },
+				],
 				default: 'market',
 			},
 			{
@@ -310,7 +497,7 @@ export class Freedom24 implements INodeType {
 				displayOptions: {
 					show: {
 						resource: ['watchlist'],
-						operation: ['delete', 'addTicker', 'removeTicker'],
+						operation: ['delete', 'addTicker', 'removeTicker', 'update', 'select'],
 					},
 				},
 				default: 0,
@@ -320,9 +507,25 @@ export class Freedom24 implements INodeType {
 				displayName: 'Name',
 				name: 'name',
 				type: 'string',
-				displayOptions: { show: { resource: ['watchlist'], operation: ['create'] } },
+				displayOptions: { show: { resource: ['watchlist'], operation: ['create', 'update'] } },
 				default: '',
-				required: true,
+				description: 'Name of the watchlist',
+			},
+			{
+				displayName: 'Picture',
+				name: 'picture',
+				type: 'string',
+				displayOptions: { show: { resource: ['watchlist'], operation: ['create', 'update'] } },
+				default: '',
+				description: 'Icon or emoji for the watchlist',
+			},
+			{
+				displayName: 'Index',
+				name: 'index',
+				type: 'number',
+				displayOptions: { show: { resource: ['watchlist'], operation: ['update'] } },
+				default: 0,
+				description: 'Position of the watchlist',
 			},
 			{
 				displayName: 'From',
@@ -379,10 +582,22 @@ export class Freedom24 implements INodeType {
 		const returnData: INodeExecutionData[] = [];
 		const resource = this.getNodeParameter('resource', 0) as string;
 		const operation = this.getNodeParameter('operation', 0) as string;
+		const authentication = this.getNodeParameter('authentication', 0) as string;
 
-		const credentials = await this.getCredentials('freedom24Api');
-		const publicKey = credentials.publicKey as string;
-		const privateKey = credentials.privateKey as string;
+		let authData: any = {};
+
+		if (authentication === 'apiKey') {
+			const credentials = await this.getCredentials('freedom24Api');
+			authData.publicKey = credentials.publicKey;
+			authData.privateKey = credentials.privateKey;
+		} else if (authentication === 'userLogin') {
+			const credentials = await this.getCredentials('freedom24User');
+			authData.sid = await getSessionId.call(
+				this,
+				credentials.login as string,
+				credentials.password as string,
+			);
+		}
 
 		for (let i = 0; i < items.length; i++) {
 			try {
@@ -390,43 +605,103 @@ export class Freedom24 implements INodeType {
 
 				if (resource === 'portfolio') {
 					if (operation === 'getAll') {
-						responseData = await makeRequest.call(this, 'getOPQ', {}, publicKey, privateKey);
+						responseData = await makeRequest.call(this, 'getOPQ', {}, authentication, authData);
 					}
 				} else if (resource === 'quote') {
 					if (operation === 'get') {
 						const ticker = this.getNodeParameter('ticker', i) as string;
-						responseData = await makeRequest.call(this, 'getStockQuotesJson', { tickers: [ticker] }, publicKey, privateKey);
+						responseData = await makeRequest.call(
+							this,
+							'getStockQuotesJson',
+							{ tickers: [ticker] },
+							authentication,
+							authData,
+						);
 					} else if (operation === 'getMany') {
-						const tickers = (this.getNodeParameter('tickers', i) as string).split(',').map(t => t.trim());
-						responseData = await makeRequest.call(this, 'getStockQuotesJson', { tickers }, publicKey, privateKey);
+						const tickers = (this.getNodeParameter('tickers', i) as string)
+							.split(',')
+							.map((t) => t.trim());
+						responseData = await makeRequest.call(
+							this,
+							'getStockQuotesJson',
+							{ tickers },
+							authentication,
+							authData,
+						);
 					} else if (operation === 'getHistory') {
 						const ticker = this.getNodeParameter('ticker', i) as string;
 						const interval = this.getNodeParameter('interval', i) as string;
 						const count = this.getNodeParameter('count', i) as number;
-						const timeframeMap: Record<string, number> = { '1M': 1, '5M': 5, '15M': 15, '30M': 30, '1H': 60, '4H': 240, '1D': 1440, '1W': 10080 };
-						responseData = await makeRequest.call(this, 'getHloc', { id: ticker, timeframe: timeframeMap[interval] || 1440, count }, publicKey, privateKey);
+						const timeframeMap: Record<string, number> = {
+							'1M': 1,
+							'5M': 5,
+							'15M': 15,
+							'30M': 30,
+							'1H': 60,
+							'4H': 240,
+							'1D': 1440,
+							'1W': 10080,
+						};
+						responseData = await makeRequest.call(
+							this,
+							'getHloc',
+							{ id: ticker, timeframe: timeframeMap[interval] || 1440, count },
+							authentication,
+							authData,
+						);
 					} else if (operation === 'search') {
 						const query = this.getNodeParameter('query', i) as string;
-						responseData = await makeRequest.call(this, 'tickerFinder', { text: query }, publicKey, privateKey);
+						responseData = await makeRequest.call(
+							this,
+							'tickerFinder',
+							{ text: query },
+							authentication,
+							authData,
+						);
 					}
 				} else if (resource === 'order') {
 					if (operation === 'getAll') {
-						responseData = await makeRequest.call(this, 'getNotifyOrderJson', {}, publicKey, privateKey);
+						responseData = await makeRequest.call(
+							this,
+							'getNotifyOrderJson',
+							{},
+							authentication,
+							authData,
+						);
 					} else if (operation === 'place') {
 						const ticker = this.getNodeParameter('ticker', i) as string;
 						const side = this.getNodeParameter('side', i) as string;
 						const type = this.getNodeParameter('type', i) as string;
 						const quantity = this.getNodeParameter('quantity', i) as number;
-						const orderParams: any = { instr_name: ticker, action_id: side === 'buy' ? 1 : 3, order_type_id: type === 'market' ? 1 : 2, qty: quantity };
-						if (type === 'limit') orderParams.limit_price = this.getNodeParameter('price', i) as number;
+						const orderParams: any = {
+							instr_name: ticker,
+							action_id: side === 'buy' ? 1 : 3,
+							order_type_id: type === 'market' ? 1 : 2,
+							qty: quantity,
+						};
+						if (type === 'limit')
+							orderParams.limit_price = this.getNodeParameter('price', i) as number;
 						const tp = this.getNodeParameter('takeProfit', i) as number;
 						const sl = this.getNodeParameter('stopLoss', i) as number;
 						if (tp > 0) orderParams.take_profit = tp;
 						if (sl > 0) orderParams.stop_loss = sl;
-						responseData = await makeRequest.call(this, 'putOrderV2', orderParams, publicKey, privateKey, true);
+						responseData = await makeRequest.call(
+							this,
+							'putOrderV2',
+							orderParams,
+							authentication,
+							authData,
+							true,
+						);
 					} else if (operation === 'cancel') {
 						const orderId = this.getNodeParameter('orderId', i) as string;
-						responseData = await makeRequest.call(this, 'deleteOrder', { order_id: orderId }, publicKey, privateKey);
+						responseData = await makeRequest.call(
+							this,
+							'deleteOrder',
+							{ order_id: orderId },
+							authentication,
+							authData,
+						);
 					} else if (operation === 'updateProtection') {
 						const ticker = this.getNodeParameter('ticker', i) as string;
 						const tp = this.getNodeParameter('takeProfit', i) as number;
@@ -434,35 +709,199 @@ export class Freedom24 implements INodeType {
 						const payload: any = { instr_name: ticker, expiration_id: 3 };
 						if (tp > 0) payload.take_profit = tp;
 						if (sl > 0) payload.stop_loss = sl;
-						responseData = await makeRequest.call(this, 'putStopLoss', payload, publicKey, privateKey, true);
+						responseData = await makeRequest.call(
+							this,
+							'putStopLoss',
+							payload,
+							authentication,
+							authData,
+							true,
+						);
 					} else if (operation === 'bulkCancel') {
-						const ids = (this.getNodeParameter('orderIds', i) as string).split(',').map(id => id.trim());
-						responseData = await Promise.all(ids.map(id => makeRequest.call(this, 'deleteOrder', { order_id: id }, publicKey, privateKey)));
+						const ids = (this.getNodeParameter('orderIds', i) as string)
+							.split(',')
+							.map((id) => id.trim());
+						responseData = await Promise.all(
+							ids.map((id) =>
+								makeRequest.call(this, 'deleteOrder', { order_id: id }, authentication, authData),
+							),
+						);
 					}
 				} else if (resource === 'market') {
-					if (operation === 'getStatus') responseData = await makeRequest.call(this, 'getMarketStatus', { market: '*' }, publicKey, privateKey);
+					if (operation === 'getStatus')
+						responseData = await makeRequest.call(
+							this,
+							'getMarketStatus',
+							{ market: '*' },
+							authentication,
+							authData,
+						);
 				} else if (resource === 'watchlist') {
-					if (operation === 'getAll') responseData = await makeRequest.call(this, 'getUserStockLists', {}, publicKey, privateKey);
-					else if (operation === 'create') responseData = await makeRequest.call(this, 'addStockList', { name: this.getNodeParameter('name', i) as string, tickers: [] }, publicKey, privateKey);
-					else if (operation === 'delete') responseData = await makeRequest.call(this, 'deleteStockList', { id: this.getNodeParameter('listId', i) as number }, publicKey, privateKey);
-					else if (operation === 'addTicker') responseData = await makeRequest.call(this, 'addStockListTicker', { id: this.getNodeParameter('listId', i) as number, ticker: this.getNodeParameter('ticker', i) as string }, publicKey, privateKey);
-					else if (operation === 'removeTicker') responseData = await makeRequest.call(this, 'deleteStockListTicker', { id: this.getNodeParameter('listId', i) as number, ticker: this.getNodeParameter('ticker', i) as string }, publicKey, privateKey);
+					if (operation === 'getAll')
+						responseData = await makeRequest.call(
+							this,
+							'getUserStockLists',
+							{},
+							authentication,
+							authData,
+						);
+					else if (operation === 'create') {
+						const payload: any = { name: this.getNodeParameter('name', i) as string, tickers: [] };
+						const picture = this.getNodeParameter('picture', i) as string;
+						if (picture) payload.picture = picture;
+						responseData = await makeRequest.call(
+							this,
+							'addStockList',
+							payload,
+							authentication,
+							authData,
+						);
+					} else if (operation === 'update') {
+						const payload: any = { id: this.getNodeParameter('listId', i) as number };
+						const name = this.getNodeParameter('name', i) as string;
+						const picture = this.getNodeParameter('picture', i) as string;
+						const index = this.getNodeParameter('index', i) as number;
+						if (name) payload.name = name;
+						if (picture) payload.picture = picture;
+						if (index !== undefined) payload.index = index;
+						responseData = await makeRequest.call(
+							this,
+							'updateStockList',
+							payload,
+							authentication,
+							authData,
+						);
+					} else if (operation === 'delete')
+						responseData = await makeRequest.call(
+							this,
+							'deleteStockList',
+							{ id: this.getNodeParameter('listId', i) as number },
+							authentication,
+							authData,
+						);
+					else if (operation === 'select')
+						responseData = await makeRequest.call(
+							this,
+							'makeStockListSelected',
+							{ id: this.getNodeParameter('listId', i) as number },
+							authentication,
+							authData,
+						);
+					else if (operation === 'addTicker')
+						responseData = await makeRequest.call(
+							this,
+							'addStockListTicker',
+							{
+								id: this.getNodeParameter('listId', i) as number,
+								ticker: this.getNodeParameter('ticker', i) as string,
+							},
+							authentication,
+							authData,
+						);
+					else if (operation === 'removeTicker')
+						responseData = await makeRequest.call(
+							this,
+							'deleteStockListTicker',
+							{
+								id: this.getNodeParameter('listId', i) as number,
+								ticker: this.getNodeParameter('ticker', i) as string,
+							},
+							authentication,
+							authData,
+						);
 				} else if (resource === 'security') {
-					if (operation === 'getInfo') responseData = await makeRequest.call(this, 'getSecurityInfo', { ticker: this.getNodeParameter('ticker', i) as string, sup: true }, publicKey, privateKey);
-					else if (operation === 'getAll') responseData = await makeRequest.call(this, 'getAllSecurities', {}, publicKey, privateKey);
+					if (operation === 'getInfo')
+						responseData = await makeRequest.call(
+							this,
+							'getSecurityInfo',
+							{ ticker: this.getNodeParameter('ticker', i) as string, sup: true },
+							authentication,
+							authData,
+						);
+					else if (operation === 'getAll')
+						responseData = await makeRequest.call(
+							this,
+							'getAllSecurities',
+							{},
+							authentication,
+							authData,
+						);
 				} else if (resource === 'history') {
 					const from = this.getNodeParameter('from', i) as string;
 					const till = this.getNodeParameter('till', i) as string;
-					if (operation === 'getOrders') responseData = await makeRequest.call(this, 'getOrdersHistory', { from, till }, publicKey, privateKey);
-					else if (operation === 'getTrades') responseData = await makeRequest.call(this, 'getTradesHistory', { beginDate: from.split('T')[0], endDate: till.split('T')[0] }, publicKey, privateKey);
-					else if (operation === 'getCashflows') responseData = await makeRequest.call(this, 'getUserCashFlows', {}, publicKey, privateKey);
+					if (operation === 'getOrders')
+						responseData = await makeRequest.call(
+							this,
+							'getOrdersHistory',
+							{ from, till },
+							authentication,
+							authData,
+						);
+					else if (operation === 'getTrades')
+						responseData = await makeRequest.call(
+							this,
+							'getTradesHistory',
+							{ beginDate: from.split('T')[0], endDate: till.split('T')[0] },
+							authentication,
+							authData,
+						);
+					else if (operation === 'getCashflows')
+						responseData = await makeRequest.call(
+							this,
+							'getUserCashFlows',
+							{},
+							authentication,
+							authData,
+						);
 				} else if (resource === 'alert') {
-					if (operation === 'getAll') responseData = await makeRequest.call(this, 'getAlertsList', {}, publicKey, privateKey);
-					else if (operation === 'toggle') responseData = await makeRequest.call(this, 'togglePriceAlert', { ticker: this.getNodeParameter('ticker', i) as string, price: { price: String(this.getNodeParameter('price', i) as number) }, trigger_type: 'last_more', quote_type: 'ltp', notification_type: 'email' }, publicKey, privateKey);
+					if (operation === 'getAll')
+						responseData = await makeRequest.call(
+							this,
+							'getAlertsList',
+							{},
+							authentication,
+							authData,
+						);
+					else if (operation === 'toggle')
+						responseData = await makeRequest.call(
+							this,
+							'togglePriceAlert',
+							{
+								ticker: this.getNodeParameter('ticker', i) as string,
+								price: { price: String(this.getNodeParameter('price', i) as number) },
+								trigger_type: 'last_more',
+								quote_type: 'ltp',
+								notification_type: 'email',
+							},
+							authentication,
+							authData,
+						);
 				} else if (resource === 'fx') {
-					if (operation === 'getRates') responseData = await makeRequest.call(this, 'getCrossRatesForDate', { base_currency: this.getNodeParameter('baseCurrency', i) as string, currencies: (this.getNodeParameter('currencies', i) as string).split(',').map(c => c.trim()) }, publicKey, privateKey);
+					if (operation === 'getRates')
+						responseData = await makeRequest.call(
+							this,
+							'getCrossRatesForDate',
+							{
+								base_currency: this.getNodeParameter('baseCurrency', i) as string,
+								currencies: (this.getNodeParameter('currencies', i) as string)
+									.split(',')
+									.map((c) => c.trim()),
+							},
+							authentication,
+							authData,
+						);
 				} else if (resource === 'dynamic') {
-					if (operation === 'call') responseData = await makeRequest.call(this, 'callCommand', { command: this.getNodeParameter('command', i) as string, parameters: JSON.parse(this.getNodeParameter('parametersJson', i) as string) }, publicKey, privateKey);
+					if (operation === 'call')
+						responseData = await makeRequest.call(
+							this,
+							'callCommand',
+							{
+								command: this.getNodeParameter('command', i) as string,
+								parameters: JSON.parse(this.getNodeParameter('parametersJson', i) as string),
+							},
+							authentication,
+							authData,
+						);
 				}
 
 				const executionData = this.helpers.returnJsonArray(responseData as any);
@@ -479,14 +918,84 @@ export class Freedom24 implements INodeType {
 	}
 }
 
-async function makeRequest(this: IExecuteFunctions, command: string, params: any, publicKey: string, privateKey: string, useV2 = false) {
-	const payload = JSON.stringify(params);
-	const timestamp = Math.floor(Date.now() / 1000);
-	const signature = crypto.createHmac('sha256', privateKey).update(payload + timestamp).digest('hex');
-	const headers = { 'Content-Type': 'application/json', 'X-NtApi-PublicKey': publicKey, 'X-NtApi-Timestamp': timestamp.toString(), 'X-NtApi-Sig': signature };
-	const baseUrl = useV2 ? 'https://tradernet.com/api/v2' : 'https://tradernet.com/api';
-	const url = useV2 ? `${baseUrl}/cmd/${command}` : `${baseUrl}/${command}`;
+async function getSessionId(
+	this: IExecuteFunctions,
+	login: string,
+	password: string,
+): Promise<string> {
 	// @ts-ignore
-	const response = await this.helpers.request( { method: 'POST', url, body: payload, headers });
-	return typeof response === 'string' ? JSON.parse(response) : response;
+	const response = await this.helpers.request({
+		method: 'POST',
+		url: 'https://tradernet.com/api/check-login-password',
+		form: {
+			login,
+			password,
+			rememberMe: 1,
+		},
+		resolveWithFullResponse: true,
+	});
+
+	if (response.statusCode !== 200) {
+		throw new Error('Login failed: Invalid credentials or server error');
+	}
+
+	const setCookie = response.headers['set-cookie'];
+	if (!setCookie) {
+		throw new Error('Login failed: No session cookie received');
+	}
+
+	const cookies = Array.isArray(setCookie) ? setCookie.join(';') : setCookie;
+	const match = cookies.match(/SID=([^;]+)/);
+	if (!match) {
+		throw new Error('Login failed: Could not extract Session ID');
+	}
+
+	return match[1];
+}
+
+async function makeRequest(
+	this: IExecuteFunctions,
+	command: string,
+	params: any,
+	authType: string,
+	authData: any,
+	useV2 = false,
+) {
+	if (authType === 'apiKey') {
+		const payload = JSON.stringify(params);
+		const timestamp = Math.floor(Date.now() / 1000);
+		const signature = crypto
+			.createHmac('sha256', authData.privateKey)
+			.update(payload + timestamp)
+			.digest('hex');
+		const headers = {
+			'Content-Type': 'application/json',
+			'X-NtApi-PublicKey': authData.publicKey,
+			'X-NtApi-Timestamp': timestamp.toString(),
+			'X-NtApi-Sig': signature,
+		};
+		const baseUrl = useV2 ? 'https://tradernet.com/api/v2' : 'https://tradernet.com/api';
+		const url = useV2 ? `${baseUrl}/cmd/${command}` : `${baseUrl}/${command}`;
+		// @ts-ignore
+		const response = await this.helpers.request({ method: 'POST', url, body: payload, headers });
+		return typeof response === 'string' ? JSON.parse(response) : response;
+	} else {
+		// User Login (Session)
+		const requestBody = {
+			cmd: command,
+			params,
+			SID: authData.sid,
+		};
+		const url = 'https://tradernet.com/api';
+		const qs = { q: JSON.stringify(requestBody) };
+
+		// @ts-ignore
+		const response = await this.helpers.request({
+			method: 'POST',
+			url,
+			qs,
+			headers: { 'Content-Type': 'application/json' },
+		});
+		return typeof response === 'string' ? JSON.parse(response) : response;
+	}
 }

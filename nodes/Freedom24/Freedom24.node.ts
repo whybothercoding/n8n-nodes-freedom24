@@ -3,6 +3,9 @@ import {
 	INodeExecutionData,
 	INodeType,
 	INodeTypeDescription,
+	NodeApiError,
+	NodeOperationError,
+	IDataObject,
 } from 'n8n-workflow';
 
 import * as crypto from 'crypto';
@@ -31,7 +34,7 @@ export class Freedom24 implements INodeType {
 				},
 			},
 			{
-				name: 'freedom24User',
+				name: 'freedom24UserApi',
 				required: true,
 				displayOptions: {
 					show: {
@@ -63,16 +66,16 @@ export class Freedom24 implements INodeType {
 				type: 'options',
 				noDataExpression: true,
 				options: [
+					{ name: 'Alert', value: 'alert' },
+					{ name: 'Dynamic', value: 'dynamic' },
+					{ name: 'FX', value: 'fx' },
+					{ name: 'History', value: 'history' },
+					{ name: 'Market', value: 'market' },
+					{ name: 'Order', value: 'order' },
 					{ name: 'Portfolio', value: 'portfolio' },
 					{ name: 'Quote', value: 'quote' },
-					{ name: 'Order', value: 'order' },
-					{ name: 'Market', value: 'market' },
-					{ name: 'Watchlist', value: 'watchlist' },
 					{ name: 'Security', value: 'security' },
-					{ name: 'History', value: 'history' },
-					{ name: 'Alert', value: 'alert' },
-					{ name: 'FX', value: 'fx' },
-					{ name: 'Dynamic', value: 'dynamic' },
+					{ name: 'Watchlist', value: 'watchlist' },
 				],
 				default: 'portfolio',
 			},
@@ -85,7 +88,7 @@ export class Freedom24 implements INodeType {
 				displayOptions: { show: { resource: ['portfolio'] } },
 				options: [
 					{
-						name: 'Get All',
+						name: 'Get Many',
 						value: 'getAll',
 						description: 'Get current portfolio positions and account balances',
 						action: 'Get portfolio',
@@ -137,16 +140,10 @@ export class Freedom24 implements INodeType {
 				displayOptions: { show: { resource: ['order'] } },
 				options: [
 					{
-						name: 'Get All',
-						value: 'getAll',
-						description: 'Get list of current/active orders',
-						action: 'Get all orders',
-					},
-					{
-						name: 'Place',
-						value: 'place',
-						description: 'Place a new order',
-						action: 'Place an order',
+						name: 'Bulk Cancel',
+						value: 'bulkCancel',
+						description: 'Cancel multiple orders',
+						action: 'Bulk cancel',
 					},
 					{
 						name: 'Cancel',
@@ -155,16 +152,22 @@ export class Freedom24 implements INodeType {
 						action: 'Cancel an order',
 					},
 					{
+						name: 'Get All',
+						value: 'getAll',
+						description: 'Get list of current/active orders',
+						action: 'Get many orders',
+					},
+					{
+						name: 'Place',
+						value: 'place',
+						description: 'Place a new order',
+						action: 'Place an order',
+					},
+					{
 						name: 'Update Protection',
 						value: 'updateProtection',
 						description: 'Update TP/SL for a ticker',
 						action: 'Update protection',
-					},
-					{
-						name: 'Bulk Cancel',
-						value: 'bulkCancel',
-						description: 'Cancel multiple orders',
-						action: 'Bulk cancel',
 					},
 				],
 				default: 'getAll',
@@ -195,10 +198,10 @@ export class Freedom24 implements INodeType {
 				displayOptions: { show: { resource: ['watchlist'] } },
 				options: [
 					{
-						name: 'Get All',
-						value: 'getAll',
-						description: 'Get all saved watchlists',
-						action: 'Get watchlists',
+						name: 'Add Ticker',
+						value: 'addTicker',
+						description: 'Add ticker to watchlist',
+						action: 'Add ticker',
 					},
 					{
 						name: 'Create',
@@ -207,16 +210,22 @@ export class Freedom24 implements INodeType {
 						action: 'Create watchlist',
 					},
 					{
-						name: 'Update',
-						value: 'update',
-						description: 'Update a watchlist',
-						action: 'Update watchlist',
-					},
-					{
 						name: 'Delete',
 						value: 'delete',
 						description: 'Delete a watchlist',
 						action: 'Delete watchlist',
+					},
+					{
+						name: 'Get All',
+						value: 'getAll',
+						description: 'Get many saved watchlists',
+						action: 'Get watchlists',
+					},
+					{
+						name: 'Remove Ticker',
+						value: 'removeTicker',
+						description: 'Remove ticker from watchlist',
+						action: 'Remove ticker',
 					},
 					{
 						name: 'Select',
@@ -225,16 +234,10 @@ export class Freedom24 implements INodeType {
 						action: 'Select watchlist',
 					},
 					{
-						name: 'Add Ticker',
-						value: 'addTicker',
-						description: 'Add ticker to watchlist',
-						action: 'Add ticker',
-					},
-					{
-						name: 'Remove Ticker',
-						value: 'removeTicker',
-						description: 'Remove ticker from watchlist',
-						action: 'Remove ticker',
+						name: 'Update',
+						value: 'update',
+						description: 'Update a watchlist',
+						action: 'Update watchlist',
 					},
 				],
 				default: 'getAll',
@@ -254,10 +257,10 @@ export class Freedom24 implements INodeType {
 						action: 'Get security info',
 					},
 					{
-						name: 'Get All',
+						name: 'Get Many',
 						value: 'getAll',
 						description: 'Query the full securities directory',
-						action: 'Get all securities',
+						action: 'Get many securities',
 					},
 				],
 				default: 'getInfo',
@@ -300,7 +303,7 @@ export class Freedom24 implements INodeType {
 				displayOptions: { show: { resource: ['alert'] } },
 				options: [
 					{
-						name: 'Get All',
+						name: 'Get Many',
 						value: 'getAll',
 						description: 'List price alerts',
 						action: 'Get alerts',
@@ -575,6 +578,7 @@ export class Freedom24 implements INodeType {
 				default: '{}',
 			},
 		],
+		usableAsTool: true,
 	};
 
 	async execute(this: IExecuteFunctions): Promise<INodeExecutionData[][]> {
@@ -584,14 +588,14 @@ export class Freedom24 implements INodeType {
 		const operation = this.getNodeParameter('operation', 0) as string;
 		const authentication = this.getNodeParameter('authentication', 0) as string;
 
-		let authData: any = {};
+		const authData: IDataObject = {};
 
 		if (authentication === 'apiKey') {
 			const credentials = await this.getCredentials('freedom24Api');
 			authData.publicKey = credentials.publicKey;
 			authData.privateKey = credentials.privateKey;
 		} else if (authentication === 'userLogin') {
-			const credentials = await this.getCredentials('freedom24User');
+			const credentials = await this.getCredentials('freedom24UserApi');
 			authData.sid = await getSessionId.call(
 				this,
 				credentials.login as string,
@@ -673,7 +677,7 @@ export class Freedom24 implements INodeType {
 						const side = this.getNodeParameter('side', i) as string;
 						const type = this.getNodeParameter('type', i) as string;
 						const quantity = this.getNodeParameter('quantity', i) as number;
-						const orderParams: any = {
+						const orderParams: IDataObject = {
 							instr_name: ticker,
 							action_id: side === 'buy' ? 1 : 3,
 							order_type_id: type === 'market' ? 1 : 2,
@@ -706,7 +710,7 @@ export class Freedom24 implements INodeType {
 						const ticker = this.getNodeParameter('ticker', i) as string;
 						const tp = this.getNodeParameter('takeProfit', i) as number;
 						const sl = this.getNodeParameter('stopLoss', i) as number;
-						const payload: any = { instr_name: ticker, expiration_id: 3 };
+						const payload: IDataObject = { instr_name: ticker, expiration_id: 3 };
 						if (tp > 0) payload.take_profit = tp;
 						if (sl > 0) payload.stop_loss = sl;
 						responseData = await makeRequest.call(
@@ -746,7 +750,10 @@ export class Freedom24 implements INodeType {
 							authData,
 						);
 					else if (operation === 'create') {
-						const payload: any = { name: this.getNodeParameter('name', i) as string, tickers: [] };
+						const payload: IDataObject = {
+							name: this.getNodeParameter('name', i) as string,
+							tickers: [],
+						};
 						const picture = this.getNodeParameter('picture', i) as string;
 						if (picture) payload.picture = picture;
 						responseData = await makeRequest.call(
@@ -757,7 +764,7 @@ export class Freedom24 implements INodeType {
 							authData,
 						);
 					} else if (operation === 'update') {
-						const payload: any = { id: this.getNodeParameter('listId', i) as number };
+						const payload: IDataObject = { id: this.getNodeParameter('listId', i) as number };
 						const name = this.getNodeParameter('name', i) as string;
 						const picture = this.getNodeParameter('picture', i) as string;
 						const index = this.getNodeParameter('index', i) as number;
@@ -904,7 +911,7 @@ export class Freedom24 implements INodeType {
 						);
 				}
 
-				const executionData = this.helpers.returnJsonArray(responseData as any);
+				const executionData = this.helpers.returnJsonArray(responseData as IDataObject[]);
 				returnData.push(...executionData);
 			} catch (error) {
 				if (this.continueOnFail()) {
@@ -923,31 +930,37 @@ async function getSessionId(
 	login: string,
 	password: string,
 ): Promise<string> {
-	// @ts-ignore
-	const response = await this.helpers.request({
-		method: 'POST',
-		url: 'https://tradernet.com/api/check-login-password',
-		form: {
-			login,
-			password,
-			rememberMe: 1,
-		},
-		resolveWithFullResponse: true,
-	});
+	let response;
+	try {
+		response = await this.helpers.httpRequest({
+			method: 'POST',
+			url: 'https://tradernet.com/api/check-login-password',
+			body: {
+				login,
+				password,
+				rememberMe: 1,
+			},
+			returnFullResponse: true,
+		});
+	} catch (error) {
+		throw new NodeApiError(this.getNode(), error as any, { message: 'Login failed' });
+	}
 
 	if (response.statusCode !== 200) {
-		throw new Error('Login failed: Invalid credentials or server error');
+		throw new NodeApiError(this.getNode(), response as any, {
+			message: 'Login failed: Invalid credentials or server error',
+		});
 	}
 
 	const setCookie = response.headers['set-cookie'];
 	if (!setCookie) {
-		throw new Error('Login failed: No session cookie received');
+		throw new NodeOperationError(this.getNode(), 'Login failed: No session cookie received');
 	}
 
 	const cookies = Array.isArray(setCookie) ? setCookie.join(';') : setCookie;
 	const match = cookies.match(/SID=([^;]+)/);
 	if (!match) {
-		throw new Error('Login failed: Could not extract Session ID');
+		throw new NodeOperationError(this.getNode(), 'Login failed: Could not extract Session ID');
 	}
 
 	return match[1];
@@ -956,28 +969,32 @@ async function getSessionId(
 async function makeRequest(
 	this: IExecuteFunctions,
 	command: string,
-	params: any,
+	params: IDataObject,
 	authType: string,
-	authData: any,
+	authData: IDataObject,
 	useV2 = false,
 ) {
 	if (authType === 'apiKey') {
 		const payload = JSON.stringify(params);
 		const timestamp = Math.floor(Date.now() / 1000);
 		const signature = crypto
-			.createHmac('sha256', authData.privateKey)
+			.createHmac('sha256', authData.privateKey as string)
 			.update(payload + timestamp)
 			.digest('hex');
 		const headers = {
 			'Content-Type': 'application/json',
-			'X-NtApi-PublicKey': authData.publicKey,
+			'X-NtApi-PublicKey': authData.publicKey as string,
 			'X-NtApi-Timestamp': timestamp.toString(),
 			'X-NtApi-Sig': signature,
 		};
 		const baseUrl = useV2 ? 'https://tradernet.com/api/v2' : 'https://tradernet.com/api';
 		const url = useV2 ? `${baseUrl}/cmd/${command}` : `${baseUrl}/${command}`;
-		// @ts-ignore
-		const response = await this.helpers.request({ method: 'POST', url, body: payload, headers });
+		const response = await this.helpers.httpRequest({
+			method: 'POST',
+			url,
+			body: payload,
+			headers,
+		});
 		return typeof response === 'string' ? JSON.parse(response) : response;
 	} else {
 		// User Login (Session)
@@ -989,8 +1006,7 @@ async function makeRequest(
 		const url = 'https://tradernet.com/api';
 		const qs = { q: JSON.stringify(requestBody) };
 
-		// @ts-ignore
-		const response = await this.helpers.request({
+		const response = await this.helpers.httpRequest({
 			method: 'POST',
 			url,
 			qs,

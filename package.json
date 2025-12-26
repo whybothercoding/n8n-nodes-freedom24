@@ -32,7 +32,7 @@
 		"strict": true,
 		"credentials": [
 			"dist/credentials/Freedom24Api.credentials.js",
-			"dist/credentials/Freedom24User.credentials.js"
+			"dist/credentials/Freedom24UserApi.credentials.js"
 		],
 		"nodes": [
 			"dist/nodes/Freedom24/Freedom24.node.js"

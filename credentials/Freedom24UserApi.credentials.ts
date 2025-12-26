@@ -1,9 +1,16 @@
 import { ICredentialType, INodeProperties } from 'n8n-workflow';
 
-export class Freedom24User implements ICredentialType {
-	name = 'freedom24User';
-	displayName = 'Freedom24 User Login';
+export class Freedom24UserApi implements ICredentialType {
+	name = 'freedom24UserApi';
+	displayName = 'Freedom24 User Login API';
 	documentationUrl = 'https://tradernet.com/api';
+	icon = 'file:freedom24.svg' as const;
+	test = {
+		request: {
+			baseURL: 'https://tradernet.com/api',
+			url: '/getMarketStatus',
+		},
+	};
 	properties: INodeProperties[] = [
 		{
 			displayName: 'Email / Login',

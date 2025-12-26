@@ -1,12 +1,16 @@
-import {
-	ICredentialType,
-	INodeProperties,
-} from 'n8n-workflow';
+import { ICredentialType, INodeProperties } from 'n8n-workflow';
 
 export class Freedom24Api implements ICredentialType {
 	name = 'freedom24Api';
 	displayName = 'Freedom24 API';
 	documentationUrl = 'https://tradernet.com/api';
+	icon = 'file:freedom24.svg' as const;
+	test = {
+		request: {
+			baseURL: 'https://tradernet.com/api',
+			url: '/getMarketStatus',
+		},
+	};
 	properties: INodeProperties[] = [
 		{
 			displayName: 'Public Key',

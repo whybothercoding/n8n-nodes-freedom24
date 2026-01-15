@@ -6,6 +6,7 @@ import {
 	NodeApiError,
 	NodeOperationError,
 	IDataObject,
+	JsonObject,
 } from 'n8n-workflow';
 
 import * as crypto from 'crypto';
@@ -71,6 +72,7 @@ export class Freedom24 implements INodeType {
 					{ name: 'FX', value: 'fx' },
 					{ name: 'History', value: 'history' },
 					{ name: 'Market', value: 'market' },
+					{ name: 'News', value: 'news' },
 					{ name: 'Order', value: 'order' },
 					{ name: 'Portfolio', value: 'portfolio' },
 					{ name: 'Quote', value: 'quote' },
@@ -152,7 +154,7 @@ export class Freedom24 implements INodeType {
 						action: 'Cancel an order',
 					},
 					{
-						name: 'Get All',
+						name: 'Get Many',
 						value: 'getAll',
 						description: 'Get list of current/active orders',
 						action: 'Get many orders',
@@ -189,6 +191,23 @@ export class Freedom24 implements INodeType {
 				],
 				default: 'getStatus',
 			},
+			// News Operations
+			{
+				displayName: 'Operation',
+				name: 'operation',
+				type: 'options',
+				noDataExpression: true,
+				displayOptions: { show: { resource: ['news'] } },
+				options: [
+					{
+						name: 'Get Many',
+						value: 'getMany',
+						description: 'Get market news for a ticker or search term',
+						action: 'Get news',
+					},
+				],
+				default: 'getMany',
+			},
 			// Watchlist Operations
 			{
 				displayName: 'Operation',
@@ -216,7 +235,7 @@ export class Freedom24 implements INodeType {
 						action: 'Delete watchlist',
 					},
 					{
-						name: 'Get All',
+						name: 'Get Many',
 						value: 'getAll',
 						description: 'Get many saved watchlists',
 						action: 'Get watchlists',
@@ -261,6 +280,12 @@ export class Freedom24 implements INodeType {
 						value: 'getAll',
 						description: 'Query the full securities directory',
 						action: 'Get many securities',
+					},
+					{
+						name: 'Get Top',
+						value: 'getTop',
+						description: 'Get most traded / fastest-growing securities',
+						action: 'Get top securities',
 					},
 				],
 				default: 'getInfo',
@@ -359,7 +384,7 @@ export class Freedom24 implements INodeType {
 				type: 'string',
 				displayOptions: {
 					show: {
-						resource: ['quote', 'order', 'watchlist', 'security', 'alert'],
+						resource: ['quote', 'order', 'watchlist', 'security', 'alert', 'news'],
 						operation: [
 							'get',
 							'getHistory',
@@ -369,20 +394,30 @@ export class Freedom24 implements INodeType {
 							'removeTicker',
 							'getInfo',
 							'toggle',
+							'getMany',
+							'getAll',
 						],
+					},
+					hide: {
+						resource: ['security', 'watchlist', 'alert'],
+						operation: ['getAll'],
 					},
 				},
 				default: '',
-				required: true,
 				placeholder: 'AAPL.US',
+				description: 'Ticker symbol (e.g., AAPL.US)',
 			},
 			{
 				displayName: 'Tickers',
 				name: 'tickers',
 				type: 'string',
-				displayOptions: { show: { resource: ['quote'], operation: ['getMany'] } },
+				displayOptions: {
+					show: {
+						resource: ['quote', 'watchlist'],
+						operation: ['getMany', 'create'],
+					},
+				},
 				default: '',
-				required: true,
 				description: 'Comma-separated list of tickers',
 			},
 			{
@@ -391,14 +426,14 @@ export class Freedom24 implements INodeType {
 				type: 'options',
 				displayOptions: { show: { resource: ['quote'], operation: ['getHistory'] } },
 				options: [
+					{ name: '1 Day', value: '1D' },
+					{ name: '1 Hour', value: '1H' },
 					{ name: '1 Minute', value: '1M' },
-					{ name: '5 Minutes', value: '5M' },
+					{ name: '1 Week', value: '1W' },
 					{ name: '15 Minutes', value: '15M' },
 					{ name: '30 Minutes', value: '30M' },
-					{ name: '1 Hour', value: '1H' },
 					{ name: '4 Hours', value: '4H' },
-					{ name: '1 Day', value: '1D' },
-					{ name: '1 Week', value: '1W' },
+					{ name: '5 Minutes', value: '5M' },
 				],
 				default: '1D',
 			},
@@ -410,12 +445,36 @@ export class Freedom24 implements INodeType {
 				default: 100,
 			},
 			{
+				displayName: 'Limit',
+				name: 'limit',
+				type: 'number',
+				typeOptions: {
+					minValue: 1,
+				},
+				description: 'Max number of results to return',
+				displayOptions: {
+					show: {
+						resource: ['quote', 'news', 'security'],
+						operation: ['search', 'getMany', 'getTop'],
+					},
+				},
+				default: 50,
+			},
+			{
 				displayName: 'Query',
 				name: 'query',
 				type: 'string',
 				displayOptions: { show: { resource: ['quote'], operation: ['search'] } },
 				default: '',
 				required: true,
+			},
+			{
+				displayName: 'Search For',
+				name: 'searchFor',
+				type: 'string',
+				displayOptions: { show: { resource: ['news'], operation: ['getMany'] } },
+				default: '',
+				description: 'Search term or company name',
 			},
 			{
 				displayName: 'Side',
@@ -478,6 +537,28 @@ export class Freedom24 implements INodeType {
 				default: 0,
 			},
 			{
+				displayName: 'Stop Loss Percent',
+				name: 'stopLossPercent',
+				type: 'number',
+				displayOptions: { show: { resource: ['order'], operation: ['place', 'updateProtection'] } },
+				default: 0,
+			},
+			{
+				displayName: 'Trailing Percent',
+				name: 'trailingPercent',
+				type: 'number',
+				displayOptions: { show: { resource: ['order'], operation: ['place', 'updateProtection'] } },
+				default: 0,
+			},
+			{
+				displayName: 'Expiration ID',
+				name: 'expirationId',
+				type: 'number',
+				displayOptions: { show: { resource: ['order'], operation: ['place', 'updateProtection'] } },
+				default: 3,
+				description: '3 = GTC (Good Till Cancelled)',
+			},
+			{
 				displayName: 'Order ID',
 				name: 'orderId',
 				type: 'string',
@@ -492,6 +573,7 @@ export class Freedom24 implements INodeType {
 				displayOptions: { show: { resource: ['order'], operation: ['bulkCancel'] } },
 				default: '',
 				required: true,
+				description: 'Comma-separated list of order IDs',
 			},
 			{
 				displayName: 'List ID',
@@ -526,9 +608,14 @@ export class Freedom24 implements INodeType {
 				displayName: 'Index',
 				name: 'index',
 				type: 'number',
-				displayOptions: { show: { resource: ['watchlist'], operation: ['update'] } },
+				displayOptions: {
+					show: {
+						resource: ['watchlist'],
+						operation: ['update', 'addTicker'],
+					},
+				},
 				default: 0,
-				description: 'Position of the watchlist',
+				description: 'Position in the list',
 			},
 			{
 				displayName: 'From',
@@ -547,6 +634,155 @@ export class Freedom24 implements INodeType {
 				required: true,
 			},
 			{
+				displayName: 'User ID',
+				name: 'userId',
+				type: 'number',
+				displayOptions: { show: { resource: ['history'], operation: ['getCashflows'] } },
+				default: 0,
+			},
+			{
+				displayName: 'Group By Type',
+				name: 'groupByType',
+				type: 'boolean',
+				displayOptions: { show: { resource: ['history'], operation: ['getCashflows'] } },
+				default: false,
+				description: 'Whether to group results by type',
+			},
+			{
+				displayName: 'Cash Totals',
+				name: 'cashTotals',
+				type: 'boolean',
+				displayOptions: { show: { resource: ['history'], operation: ['getCashflows'] } },
+				default: false,
+				description: 'Whether to include cash totals',
+			},
+			{
+				displayName: 'Hide Limits',
+				name: 'hideLimits',
+				type: 'boolean',
+				displayOptions: { show: { resource: ['history'], operation: ['getCashflows'] } },
+				default: false,
+				description: 'Whether to hide limits block',
+			},
+			{
+				displayName: 'Take',
+				name: 'take',
+				type: 'number',
+				displayOptions: {
+					show: {
+						resource: ['security', 'history'],
+						operation: ['getAll', 'getCashflows'],
+					},
+				},
+				default: 50,
+			},
+			{
+				displayName: 'Skip',
+				name: 'skip',
+				type: 'number',
+				displayOptions: {
+					show: {
+						resource: ['security', 'history'],
+						operation: ['getAll', 'getCashflows'],
+					},
+				},
+				default: 0,
+			},
+			{
+				displayName: 'Without Refund',
+				name: 'withoutRefund',
+				type: 'boolean',
+				displayOptions: { show: { resource: ['history'], operation: ['getCashflows'] } },
+				default: false,
+				description: 'Whether to exclude refunds',
+			},
+			{
+				displayName: 'Filters (JSON)',
+				name: 'filtersJson',
+				type: 'string',
+				displayOptions: {
+					show: {
+						resource: ['security', 'history'],
+						operation: ['getAll', 'getCashflows'],
+					},
+				},
+				default: '[]',
+				description: 'Filters array as JSON',
+			},
+			{
+				displayName: 'Sort (JSON)',
+				name: 'sortJson',
+				type: 'string',
+				displayOptions: {
+					show: {
+						resource: ['security', 'history'],
+						operation: ['getAll', 'getCashflows'],
+					},
+				},
+				default: '[]',
+				description: 'Sort spec array as JSON',
+			},
+			{
+				displayName: 'Triggered Only',
+				name: 'triggered',
+				type: 'boolean',
+				displayOptions: { show: { resource: ['alert'], operation: ['getAll'] } },
+				default: false,
+				description: 'Whether to return triggered alerts only',
+			},
+			{
+				displayName: 'Trigger Type',
+				name: 'triggerType',
+				type: 'string',
+				displayOptions: { show: { resource: ['alert'], operation: ['toggle'] } },
+				default: 'last_more',
+				description: 'Last_more, last_less, etc',
+			},
+			{
+				displayName: 'Quote Type',
+				name: 'quoteType',
+				type: 'string',
+				displayOptions: { show: { resource: ['alert'], operation: ['toggle'] } },
+				default: 'ltp',
+			},
+			{
+				displayName: 'Notification Type',
+				name: 'notificationType',
+				type: 'string',
+				displayOptions: { show: { resource: ['alert'], operation: ['toggle'] } },
+				default: 'email',
+			},
+			{
+				displayName: 'Alert Period',
+				name: 'alertPeriod',
+				type: 'number',
+				displayOptions: { show: { resource: ['alert'], operation: ['toggle'] } },
+				default: 0,
+			},
+			{
+				displayName: 'Expire',
+				name: 'expire',
+				type: 'number',
+				displayOptions: { show: { resource: ['alert'], operation: ['toggle'] } },
+				default: 0,
+			},
+			{
+				displayName: 'Alert ID',
+				name: 'alertId',
+				type: 'number',
+				displayOptions: { show: { resource: ['alert'], operation: ['toggle'] } },
+				default: 0,
+				description: 'Required for delete',
+			},
+			{
+				displayName: 'Delete Alert',
+				name: 'deleteAlert',
+				type: 'boolean',
+				displayOptions: { show: { resource: ['alert'], operation: ['toggle'] } },
+				default: false,
+				description: 'Whether to delete the alert',
+			},
+			{
 				displayName: 'Base Currency',
 				name: 'baseCurrency',
 				type: 'string',
@@ -561,6 +797,7 @@ export class Freedom24 implements INodeType {
 				displayOptions: { show: { resource: ['fx'], operation: ['getRates'] } },
 				default: 'EUR',
 				required: true,
+				description: 'Comma-separated list of currencies',
 			},
 			{
 				displayName: 'Command',
@@ -576,6 +813,38 @@ export class Freedom24 implements INodeType {
 				type: 'string',
 				displayOptions: { show: { resource: ['dynamic'], operation: ['call'] } },
 				default: '{}',
+			},
+			{
+				displayName: 'Confirm',
+				name: 'confirm',
+				type: 'boolean',
+				displayOptions: {
+					show: {
+						resource: ['order', 'watchlist', 'alert', 'dynamic'],
+					},
+					hide: {
+						resource: ['order', 'watchlist', 'alert'],
+						operation: ['getAll', 'select'],
+					},
+				},
+				default: false,
+				description: 'Whether to confirm live action',
+			},
+			{
+				displayName: 'Dry Run',
+				name: 'dryRun',
+				type: 'boolean',
+				displayOptions: {
+					show: {
+						resource: ['order', 'watchlist', 'alert', 'dynamic'],
+					},
+					hide: {
+						resource: ['order', 'watchlist', 'alert'],
+						operation: ['getAll', 'select'],
+					},
+				},
+				default: false,
+				description: 'Whether to return payload without sending',
 			},
 		],
 		usableAsTool: true,
@@ -606,6 +875,8 @@ export class Freedom24 implements INodeType {
 		for (let i = 0; i < items.length; i++) {
 			try {
 				let responseData;
+				const confirm = this.getNodeParameter('confirm', i, false) as boolean;
+				const dryRun = this.getNodeParameter('dryRun', i, false) as boolean;
 
 				if (resource === 'portfolio') {
 					if (operation === 'getAll') {
@@ -687,49 +958,110 @@ export class Freedom24 implements INodeType {
 							orderParams.limit_price = this.getNodeParameter('price', i) as number;
 						const tp = this.getNodeParameter('takeProfit', i) as number;
 						const sl = this.getNodeParameter('stopLoss', i) as number;
+						const slp = this.getNodeParameter('stopLossPercent', i) as number;
+						const tp_trailing = this.getNodeParameter('trailingPercent', i) as number;
+						const expirationId = this.getNodeParameter('expirationId', i) as number;
+
 						if (tp > 0) orderParams.take_profit = tp;
 						if (sl > 0) orderParams.stop_loss = sl;
-						responseData = await makeRequest.call(
-							this,
-							'putOrderV2',
-							orderParams,
-							authentication,
-							authData,
-							true,
-						);
+						if (slp > 0) orderParams.stop_loss_percent = slp;
+						if (tp_trailing > 0) orderParams.trailing_stop_percent = tp_trailing;
+						orderParams.expiration_id = expirationId;
+
+						if (dryRun) {
+							responseData = { dryRun: true, command: 'putOrderV2', params: orderParams };
+						} else if (!confirm) {
+							throw new NodeOperationError(
+								this.getNode(),
+								'Refusing to place a live order without confirm=true (use dryRun=true to preview).',
+								{ itemIndex: i },
+							);
+						} else {
+							responseData = await makeRequest.call(
+								this,
+								'putOrderV2',
+								orderParams,
+								authentication,
+								authData,
+								true,
+							);
+						}
 					} else if (operation === 'cancel') {
 						const orderId = this.getNodeParameter('orderId', i) as string;
-						responseData = await makeRequest.call(
-							this,
-							'deleteOrder',
-							{ order_id: orderId },
-							authentication,
-							authData,
-						);
+						const params = { order_id: orderId };
+						if (dryRun) {
+							responseData = { dryRun: true, command: 'deleteOrder', params };
+						} else if (!confirm) {
+							throw new NodeOperationError(
+								this.getNode(),
+								'Refusing to cancel order without confirm=true',
+								{ itemIndex: i },
+							);
+						} else {
+							responseData = await makeRequest.call(
+								this,
+								'deleteOrder',
+								params,
+								authentication,
+								authData,
+							);
+						}
 					} else if (operation === 'updateProtection') {
 						const ticker = this.getNodeParameter('ticker', i) as string;
 						const tp = this.getNodeParameter('takeProfit', i) as number;
 						const sl = this.getNodeParameter('stopLoss', i) as number;
-						const payload: IDataObject = { instr_name: ticker, expiration_id: 3 };
+						const slp = this.getNodeParameter('stopLossPercent', i) as number;
+						const tp_trailing = this.getNodeParameter('trailingPercent', i) as number;
+						const expirationId = this.getNodeParameter('expirationId', i) as number;
+
+						const payload: IDataObject = { instr_name: ticker, expiration_id: expirationId };
 						if (tp > 0) payload.take_profit = tp;
 						if (sl > 0) payload.stop_loss = sl;
-						responseData = await makeRequest.call(
-							this,
-							'putStopLoss',
-							payload,
-							authentication,
-							authData,
-							true,
-						);
+						if (slp > 0) payload.stop_loss_percent = slp;
+						if (tp_trailing > 0) payload.trailing_stop_percent = tp_trailing;
+
+						if (dryRun) {
+							responseData = { dryRun: true, command: 'putStopLoss', params: payload };
+						} else if (!confirm) {
+							throw new NodeOperationError(
+								this.getNode(),
+								'Refusing to update protection without confirm=true',
+								{ itemIndex: i },
+							);
+						} else {
+							responseData = await makeRequest.call(
+								this,
+								'putStopLoss',
+								payload,
+								authentication,
+								authData,
+								true,
+							);
+						}
 					} else if (operation === 'bulkCancel') {
 						const ids = (this.getNodeParameter('orderIds', i) as string)
 							.split(',')
 							.map((id) => id.trim());
-						responseData = await Promise.all(
-							ids.map((id) =>
-								makeRequest.call(this, 'deleteOrder', { order_id: id }, authentication, authData),
-							),
-						);
+
+						if (dryRun) {
+							responseData = ids.map((id) => ({
+								dryRun: true,
+								command: 'deleteOrder',
+								params: { order_id: id },
+							}));
+						} else if (!confirm) {
+							throw new NodeOperationError(
+								this.getNode(),
+								'Refusing to bulk cancel without confirm=true',
+								{ itemIndex: i },
+							);
+						} else {
+							responseData = await Promise.all(
+								ids.map((id) =>
+									makeRequest.call(this, 'deleteOrder', { order_id: id }, authentication, authData),
+								),
+							);
+						}
 					}
 				} else if (resource === 'market') {
 					if (operation === 'getStatus')
@@ -740,6 +1072,23 @@ export class Freedom24 implements INodeType {
 							authentication,
 							authData,
 						);
+				} else if (resource === 'news') {
+					if (operation === 'getMany') {
+						const ticker = this.getNodeParameter('ticker', i, '') as string;
+						const searchFor = this.getNodeParameter('searchFor', i, '') as string;
+						const limit = this.getNodeParameter('limit', i, 10) as number;
+						const params: IDataObject = { limit };
+						if (ticker) params.ticker = ticker;
+						if (searchFor) params.searchFor = searchFor;
+
+						responseData = await makeRequest.call(
+							this,
+							'getNews',
+							params,
+							authentication,
+							authData,
+						);
+					}
 				} else if (resource === 'watchlist') {
 					if (operation === 'getAll')
 						responseData = await makeRequest.call(
@@ -750,19 +1099,31 @@ export class Freedom24 implements INodeType {
 							authData,
 						);
 					else if (operation === 'create') {
+						const tickersStr = this.getNodeParameter('tickers', i, '') as string;
 						const payload: IDataObject = {
 							name: this.getNodeParameter('name', i) as string,
-							tickers: [],
+							tickers: tickersStr ? tickersStr.split(',').map((t) => t.trim()) : [],
 						};
 						const picture = this.getNodeParameter('picture', i) as string;
 						if (picture) payload.picture = picture;
-						responseData = await makeRequest.call(
-							this,
-							'addStockList',
-							payload,
-							authentication,
-							authData,
-						);
+
+						if (dryRun) {
+							responseData = { dryRun: true, command: 'addStockList', params: payload };
+						} else if (!confirm) {
+							throw new NodeOperationError(
+								this.getNode(),
+								'Refusing to create watchlist without confirm=true',
+								{ itemIndex: i },
+							);
+						} else {
+							responseData = await makeRequest.call(
+								this,
+								'addStockList',
+								payload,
+								authentication,
+								authData,
+							);
+						}
 					} else if (operation === 'update') {
 						const payload: IDataObject = { id: this.getNodeParameter('listId', i) as number };
 						const name = this.getNodeParameter('name', i) as string;
@@ -771,22 +1132,44 @@ export class Freedom24 implements INodeType {
 						if (name) payload.name = name;
 						if (picture) payload.picture = picture;
 						if (index !== undefined) payload.index = index;
-						responseData = await makeRequest.call(
-							this,
-							'updateStockList',
-							payload,
-							authentication,
-							authData,
-						);
-					} else if (operation === 'delete')
-						responseData = await makeRequest.call(
-							this,
-							'deleteStockList',
-							{ id: this.getNodeParameter('listId', i) as number },
-							authentication,
-							authData,
-						);
-					else if (operation === 'select')
+
+						if (dryRun) {
+							responseData = { dryRun: true, command: 'updateStockList', params: payload };
+						} else if (!confirm) {
+							throw new NodeOperationError(
+								this.getNode(),
+								'Refusing to update watchlist without confirm=true',
+								{ itemIndex: i },
+							);
+						} else {
+							responseData = await makeRequest.call(
+								this,
+								'updateStockList',
+								payload,
+								authentication,
+								authData,
+							);
+						}
+					} else if (operation === 'delete') {
+						const params = { id: this.getNodeParameter('listId', i) as number };
+						if (dryRun) {
+							responseData = { dryRun: true, command: 'deleteStockList', params };
+						} else if (!confirm) {
+							throw new NodeOperationError(
+								this.getNode(),
+								'Refusing to delete watchlist without confirm=true',
+								{ itemIndex: i },
+							);
+						} else {
+							responseData = await makeRequest.call(
+								this,
+								'deleteStockList',
+								params,
+								authentication,
+								authData,
+							);
+						}
+					} else if (operation === 'select')
 						responseData = await makeRequest.call(
 							this,
 							'makeStockListSelected',
@@ -794,28 +1177,54 @@ export class Freedom24 implements INodeType {
 							authentication,
 							authData,
 						);
-					else if (operation === 'addTicker')
-						responseData = await makeRequest.call(
-							this,
-							'addStockListTicker',
-							{
-								id: this.getNodeParameter('listId', i) as number,
-								ticker: this.getNodeParameter('ticker', i) as string,
-							},
-							authentication,
-							authData,
-						);
-					else if (operation === 'removeTicker')
-						responseData = await makeRequest.call(
-							this,
-							'deleteStockListTicker',
-							{
-								id: this.getNodeParameter('listId', i) as number,
-								ticker: this.getNodeParameter('ticker', i) as string,
-							},
-							authentication,
-							authData,
-						);
+					else if (operation === 'addTicker') {
+						const index = this.getNodeParameter('index', i) as number;
+						const payload: IDataObject = {
+							id: this.getNodeParameter('listId', i) as number,
+							ticker: this.getNodeParameter('ticker', i) as string,
+						};
+						if (index !== undefined) payload.index = index;
+
+						if (dryRun) {
+							responseData = { dryRun: true, command: 'addStockListTicker', params: payload };
+						} else if (!confirm) {
+							throw new NodeOperationError(
+								this.getNode(),
+								'Refusing to add ticker without confirm=true',
+								{ itemIndex: i },
+							);
+						} else {
+							responseData = await makeRequest.call(
+								this,
+								'addStockListTicker',
+								payload,
+								authentication,
+								authData,
+							);
+						}
+					} else if (operation === 'removeTicker') {
+						const payload: IDataObject = {
+							id: this.getNodeParameter('listId', i) as number,
+							ticker: this.getNodeParameter('ticker', i) as string,
+						};
+						if (dryRun) {
+							responseData = { dryRun: true, command: 'deleteStockListTicker', params: payload };
+						} else if (!confirm) {
+							throw new NodeOperationError(
+								this.getNode(),
+								'Refusing to remove ticker without confirm=true',
+								{ itemIndex: i },
+							);
+						} else {
+							responseData = await makeRequest.call(
+								this,
+								'deleteStockListTicker',
+								payload,
+								authentication,
+								authData,
+							);
+						}
+					}
 				} else if (resource === 'security') {
 					if (operation === 'getInfo')
 						responseData = await makeRequest.call(
@@ -825,14 +1234,32 @@ export class Freedom24 implements INodeType {
 							authentication,
 							authData,
 						);
-					else if (operation === 'getAll')
+					else if (operation === 'getAll') {
+						const take = this.getNodeParameter('take', i, 50) as number;
+						const skip = this.getNodeParameter('skip', i, 0) as number;
+						const filters = JSON.parse(this.getNodeParameter('filtersJson', i, '[]') as string);
+						const sort = JSON.parse(this.getNodeParameter('sortJson', i, '[]') as string);
+						const payload: IDataObject = { take, skip };
+						if (filters.length > 0) payload.filter = { filters };
+						if (sort.length > 0) payload.sort = sort;
+
 						responseData = await makeRequest.call(
 							this,
 							'getAllSecurities',
-							{},
+							payload,
 							authentication,
 							authData,
 						);
+					} else if (operation === 'getTop') {
+						const limit = this.getNodeParameter('limit', i, 10) as number;
+						responseData = await makeRequest.call(
+							this,
+							'getTopSecurities',
+							{ limit },
+							authentication,
+							authData,
+						);
+					}
 				} else if (resource === 'history') {
 					const from = this.getNodeParameter('from', i) as string;
 					const till = this.getNodeParameter('till', i) as string;
@@ -852,37 +1279,86 @@ export class Freedom24 implements INodeType {
 							authentication,
 							authData,
 						);
-					else if (operation === 'getCashflows')
+					else if (operation === 'getCashflows') {
+						const userId = this.getNodeParameter('userId', i, 0) as number;
+						const groupByType = this.getNodeParameter('groupByType', i, false) as boolean;
+						const cashTotals = this.getNodeParameter('cashTotals', i, false) as boolean;
+						const hideLimits = this.getNodeParameter('hideLimits', i, false) as boolean;
+						const take = this.getNodeParameter('take', i, 50) as number;
+						const skip = this.getNodeParameter('skip', i, 0) as number;
+						const withoutRefund = this.getNodeParameter('withoutRefund', i, false) as boolean;
+						const filters = JSON.parse(this.getNodeParameter('filtersJson', i, '[]') as string);
+						const sort = JSON.parse(this.getNodeParameter('sortJson', i, '[]') as string);
+
+						const payload: IDataObject = {
+							groupByType: groupByType ? 1 : 0,
+							cash_totals: cashTotals ? 1 : 0,
+							hide_limits: hideLimits ? 1 : 0,
+							take,
+							skip,
+							without_refund: withoutRefund ? 1 : 0,
+						};
+						if (userId > 0) payload.user_id = userId;
+						if (filters.length > 0) payload.filters = filters;
+						if (sort.length > 0) payload.sort = sort;
+
 						responseData = await makeRequest.call(
 							this,
 							'getUserCashFlows',
-							{},
+							payload,
 							authentication,
 							authData,
 						);
+					}
 				} else if (resource === 'alert') {
-					if (operation === 'getAll')
+					if (operation === 'getAll') {
+						const triggered = this.getNodeParameter('triggered', i, false) as boolean;
+						const ticker = this.getNodeParameter('ticker', i, '') as string;
+						const payload: IDataObject = { triggered };
+						if (ticker) payload.ticker = ticker;
 						responseData = await makeRequest.call(
 							this,
 							'getAlertsList',
-							{},
+							payload,
 							authentication,
 							authData,
 						);
-					else if (operation === 'toggle')
-						responseData = await makeRequest.call(
-							this,
-							'togglePriceAlert',
-							{
-								ticker: this.getNodeParameter('ticker', i) as string,
-								price: { price: String(this.getNodeParameter('price', i) as number) },
-								trigger_type: 'last_more',
-								quote_type: 'ltp',
-								notification_type: 'email',
-							},
-							authentication,
-							authData,
-						);
+					} else if (operation === 'toggle') {
+						const del = this.getNodeParameter('deleteAlert', i, false) as boolean;
+						const payload: IDataObject = {
+							quote_type: this.getNodeParameter('quoteType', i) as string,
+							notification_type: this.getNodeParameter('notificationType', i) as string,
+						};
+
+						if (del) {
+							payload.id = this.getNodeParameter('alertId', i) as number;
+							payload.del = true;
+						} else {
+							payload.ticker = this.getNodeParameter('ticker', i) as string;
+							payload.price = { price: String(this.getNodeParameter('price', i) as number) };
+							payload.trigger_type = this.getNodeParameter('triggerType', i) as string;
+							payload.alert_period = this.getNodeParameter('alertPeriod', i) as number;
+							payload.expire = this.getNodeParameter('expire', i) as number;
+						}
+
+						if (dryRun) {
+							responseData = { dryRun: true, command: 'togglePriceAlert', params: payload };
+						} else if (!confirm) {
+							throw new NodeOperationError(
+								this.getNode(),
+								'Refusing to toggle alert without confirm=true',
+								{ itemIndex: i },
+							);
+						} else {
+							responseData = await makeRequest.call(
+								this,
+								'togglePriceAlert',
+								payload,
+								authentication,
+								authData,
+							);
+						}
+					}
 				} else if (resource === 'fx') {
 					if (operation === 'getRates')
 						responseData = await makeRequest.call(
@@ -898,24 +1374,39 @@ export class Freedom24 implements INodeType {
 							authData,
 						);
 				} else if (resource === 'dynamic') {
-					if (operation === 'call')
-						responseData = await makeRequest.call(
-							this,
-							'callCommand',
-							{
-								command: this.getNodeParameter('command', i) as string,
-								parameters: JSON.parse(this.getNodeParameter('parametersJson', i) as string),
-							},
-							authentication,
-							authData,
-						);
+					if (operation === 'call') {
+						const command = this.getNodeParameter('command', i) as string;
+						const params = JSON.parse(this.getNodeParameter('parametersJson', i, '{}') as string);
+						if (dryRun) {
+							responseData = { dryRun: true, command, params };
+						} else if (
+							!confirm &&
+							['put', 'delete', 'add', 'update', 'toggle', 'make'].some((kw) =>
+								command.toLowerCase().includes(kw),
+							)
+						) {
+							throw new NodeOperationError(
+								this.getNode(),
+								`Command ${command} might be a mutation. Please set confirm=true.`,
+								{ itemIndex: i },
+							);
+						} else {
+							responseData = await makeRequest.call(
+								this,
+								'callCommand',
+								{ command, parameters: params },
+								authentication,
+								authData,
+							);
+						}
+					}
 				}
 
 				const executionData = this.helpers.returnJsonArray(responseData as IDataObject[]);
 				returnData.push(...executionData);
 			} catch (error) {
 				if (this.continueOnFail()) {
-					returnData.push({ json: { error: error.message } });
+					returnData.push({ json: { error: (error as Error).message } });
 					continue;
 				}
 				throw error;
@@ -943,11 +1434,13 @@ async function getSessionId(
 			returnFullResponse: true,
 		});
 	} catch (error) {
-		throw new NodeApiError(this.getNode(), error as any, { message: 'Login failed' });
+		throw new NodeApiError(this.getNode(), error as unknown as JsonObject, {
+			message: 'Login failed',
+		});
 	}
 
 	if (response.statusCode !== 200) {
-		throw new NodeApiError(this.getNode(), response as any, {
+		throw new NodeApiError(this.getNode(), response as unknown as JsonObject, {
 			message: 'Login failed: Invalid credentials or server error',
 		});
 	}

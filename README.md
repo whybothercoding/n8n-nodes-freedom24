@@ -9,8 +9,9 @@ Freedom24 is a trading platform by Freedom Finance, providing access to global s
 [Installation](#installation)  
 [Operations](#operations)  
 [Credentials](#credentials)
-[Compatibility](#compatibility)
-[Resources](#resources)
+[Compatibility](#compatibility)  
+[Resources](#resources)  
+[Development](#development)
 
 ## Installation
 
@@ -20,14 +21,36 @@ Follow the [installation guide](https://docs.n8n.io/integrations/community-nodes
 
 The node supports the following operations organized by resource:
 
-- **Portfolio**: Get portfolio balances and positions.
-- **Quote**: Get real-time quotes, historical data (candlesticks), and search for tickers.
-- **Order**: Place, cancel, and get the status of orders. Includes support for bulk cancellation and updating protection orders (TP/SL).
-- **Watchlist**: Manage watchlists, including creating, deleting, and adding/removing tickers.
-- **History**: Retrieve history for orders, trades, and cashflows.
-- **Alert**: List and toggle price alerts.
-- **Security/FX**: Get instrument information, a list of all securities, and foreign exchange cross rates.
-- **Dynamic**: Make a raw call to any Tradernet API command.
+- **Portfolio**: Get current positions and account balances.
+- **Quote**: Get real-time quotes (single/multiple), historical candlesticks (OHLCV), and search for tickers.
+- **Order**:
+  - **Place**: Market and Limit orders with optional Take Profit, Stop Loss (Price/Percent), Trailing Stop, and Expiration settings.
+  - **Cancel**: Cancel individual or bulk orders.
+  - **Update Protection**: Modify TP/SL and trailing settings for existing positions.
+  - **Get Many**: List active orders.
+- **Watchlist**: Create, update, delete, and manage tickers in custom watchlists.
+- **History**:
+  - **Orders**: Full history of orders within a date range.
+  - **Trades**: Executed trades history.
+  - **Cashflows**: Comprehensive cash movement history with filtering, sorting, and pagination.
+- **Security**:
+  - **Get Info**: Detailed instrument information.
+  - **Get Many**: Query the full securities directory with JSON filters/sorting.
+  - **Get Top**: Identify most traded or fastest-growing securities.
+- **News**: Retrieve market news filtered by ticker or search term.
+- **Alert**: Manage price alerts (create, list, delete, toggle).
+- **FX**: Get foreign exchange cross rates for multiple currencies.
+- **Market**: Check market open/close statuses.
+- **Dynamic**: Execute any raw Tradernet API command with custom JSON parameters.
+
+## AI Agent Readiness
+
+This node is optimized for use as a tool in AI Agent workflows (e.g., using n8n's AI Agent node):
+
+- **Tool Enabled**: `usableAsTool: true` is set.
+- **Descriptive Meta**: Properties include verbose descriptions to help LLMs understand expected formats (e.g., `AAPL.US`).
+- **Safety First**: Mutation operations require `confirm: true` or `dryRun: true`.
+- **Dry Run Support**: Returns the prepared API payload for "pre-flight" validation by an agent.
 
 ## Credentials
 
@@ -44,3 +67,19 @@ This node was built and tested with n8n version 1.x. It should be compatible wit
 
 - [n8n community nodes documentation](https://docs.n8n.io/integrations/#community-nodes)
 - [Tradernet API Documentation](https://tradernet.com/tradernet-api)
+
+## Development
+
+### Commands
+
+- **Build**: `npm run build`
+- **Lint**: `npm run lint`
+- **Fix Lint**: `npm run lint:fix`
+- **Watch**: `npm run build:watch`
+
+### Code Style
+
+- Use **Tabs** for indentation.
+- Use **Single Quotes** for strings.
+- Follow the **Resource -> Operation** pattern for the node structure.
+- Always include `confirm` and `dryRun` parameters for operations that modify state.

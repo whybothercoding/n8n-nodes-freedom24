@@ -72,7 +72,6 @@ export class Freedom24 implements INodeType {
 					{ name: 'FX', value: 'fx' },
 					{ name: 'History', value: 'history' },
 					{ name: 'Market', value: 'market' },
-					{ name: 'News', value: 'news' },
 					{ name: 'Order', value: 'order' },
 					{ name: 'Portfolio', value: 'portfolio' },
 					{ name: 'Quote', value: 'quote' },
@@ -119,8 +118,8 @@ export class Freedom24 implements INodeType {
 						action: 'Get many quotes',
 					},
 					{
-						name: 'Get History',
-						value: 'getHistory',
+						name: 'Get Candlesticks',
+						value: 'getCandlesticks',
 						description: 'Get historical OHLCV data',
 						action: 'Get candlesticks',
 					},
@@ -190,23 +189,6 @@ export class Freedom24 implements INodeType {
 					},
 				],
 				default: 'getStatus',
-			},
-			// News Operations
-			{
-				displayName: 'Operation',
-				name: 'operation',
-				type: 'options',
-				noDataExpression: true,
-				displayOptions: { show: { resource: ['news'] } },
-				options: [
-					{
-						name: 'Get Many',
-						value: 'getMany',
-						description: 'Get market news for a ticker or search term',
-						action: 'Get news',
-					},
-				],
-				default: 'getMany',
 			},
 			// Watchlist Operations
 			{
@@ -384,10 +366,10 @@ export class Freedom24 implements INodeType {
 				type: 'string',
 				displayOptions: {
 					show: {
-						resource: ['quote', 'order', 'watchlist', 'security', 'alert', 'news'],
+						resource: ['quote', 'order', 'watchlist', 'security', 'alert', 'history'],
 						operation: [
 							'get',
-							'getHistory',
+							'getCandlesticks',
 							'place',
 							'updateProtection',
 							'addTicker',
@@ -396,6 +378,7 @@ export class Freedom24 implements INodeType {
 							'toggle',
 							'getMany',
 							'getAll',
+							'getTrades',
 						],
 					},
 					hide: {
@@ -424,7 +407,7 @@ export class Freedom24 implements INodeType {
 				displayName: 'Interval',
 				name: 'interval',
 				type: 'options',
-				displayOptions: { show: { resource: ['quote'], operation: ['getHistory'] } },
+				displayOptions: { show: { resource: ['quote'], operation: ['getCandlesticks'] } },
 				options: [
 					{ name: '1 Day', value: '1D' },
 					{ name: '1 Hour', value: '1H' },
@@ -441,7 +424,7 @@ export class Freedom24 implements INodeType {
 				displayName: 'Count',
 				name: 'count',
 				type: 'number',
-				displayOptions: { show: { resource: ['quote'], operation: ['getHistory'] } },
+				displayOptions: { show: { resource: ['quote'], operation: ['getCandlesticks'] } },
 				default: 100,
 			},
 			{
@@ -454,7 +437,7 @@ export class Freedom24 implements INodeType {
 				description: 'Max number of results to return',
 				displayOptions: {
 					show: {
-						resource: ['quote', 'news', 'security'],
+						resource: ['quote', 'security'],
 						operation: ['search', 'getMany', 'getTop'],
 					},
 				},
@@ -469,12 +452,12 @@ export class Freedom24 implements INodeType {
 				required: true,
 			},
 			{
-				displayName: 'Search For',
-				name: 'searchFor',
+				displayName: 'Market Mode',
+				name: 'marketMode',
 				type: 'string',
-				displayOptions: { show: { resource: ['news'], operation: ['getMany'] } },
+				displayOptions: { show: { resource: ['market'], operation: ['getStatus'] } },
 				default: '',
-				description: 'Search term or company name',
+				description: 'Optional mode (e.g., "demo")',
 			},
 			{
 				displayName: 'Side',
@@ -632,6 +615,38 @@ export class Freedom24 implements INodeType {
 				displayOptions: { show: { resource: ['history'], operation: ['getOrders', 'getTrades'] } },
 				default: '',
 				required: true,
+			},
+			{
+				displayName: 'Trade ID',
+				name: 'tradeId',
+				type: 'number',
+				displayOptions: { show: { resource: ['history'], operation: ['getTrades'] } },
+				default: 0,
+				description: 'Trade ID to start from',
+			},
+			{
+				displayName: 'Max Results',
+				name: 'maxResults',
+				type: 'number',
+				displayOptions: { show: { resource: ['history'], operation: ['getTrades'] } },
+				default: 100,
+				description: 'Max number of trades to return',
+			},
+			{
+				displayName: 'Currency',
+				name: 'currency',
+				type: 'string',
+				displayOptions: { show: { resource: ['history'], operation: ['getTrades'] } },
+				default: '',
+				description: 'Filter by currency',
+			},
+			{
+				displayName: 'Reception ID',
+				name: 'receptionId',
+				type: 'number',
+				displayOptions: { show: { resource: ['history'], operation: ['getTrades'] } },
+				default: 0,
+				description: 'Filter by office/reception ID',
 			},
 			{
 				displayName: 'User ID',
@@ -903,7 +918,7 @@ export class Freedom24 implements INodeType {
 							authentication,
 							authData,
 						);
-					} else if (operation === 'getHistory') {
+					} else if (operation === 'getCandlesticks') {
 						const ticker = this.getNodeParameter('ticker', i) as string;
 						const interval = this.getNodeParameter('interval', i) as string;
 						const count = this.getNodeParameter('count', i) as number;
@@ -965,7 +980,7 @@ export class Freedom24 implements INodeType {
 						if (tp > 0) orderParams.take_profit = tp;
 						if (sl > 0) orderParams.stop_loss = sl;
 						if (slp > 0) orderParams.stop_loss_percent = slp;
-						if (tp_trailing > 0) orderParams.trailing_stop_percent = tp_trailing;
+						if (tp_trailing > 0) orderParams.stoploss_trailing_percent = tp_trailing;
 						orderParams.expiration_id = expirationId;
 
 						if (dryRun) {
@@ -1018,7 +1033,7 @@ export class Freedom24 implements INodeType {
 						if (tp > 0) payload.take_profit = tp;
 						if (sl > 0) payload.stop_loss = sl;
 						if (slp > 0) payload.stop_loss_percent = slp;
-						if (tp_trailing > 0) payload.trailing_stop_percent = tp_trailing;
+						if (tp_trailing > 0) payload.stoploss_trailing_percent = tp_trailing;
 
 						if (dryRun) {
 							responseData = { dryRun: true, command: 'putStopLoss', params: payload };
@@ -1064,26 +1079,13 @@ export class Freedom24 implements INodeType {
 						}
 					}
 				} else if (resource === 'market') {
-					if (operation === 'getStatus')
+					if (operation === 'getStatus') {
+						const mode = this.getNodeParameter('marketMode', i, '') as string;
+						const params: IDataObject = { market: '*' };
+						if (mode) params.mode = mode;
 						responseData = await makeRequest.call(
 							this,
 							'getMarketStatus',
-							{ market: '*' },
-							authentication,
-							authData,
-						);
-				} else if (resource === 'news') {
-					if (operation === 'getMany') {
-						const ticker = this.getNodeParameter('ticker', i, '') as string;
-						const searchFor = this.getNodeParameter('searchFor', i, '') as string;
-						const limit = this.getNodeParameter('limit', i, 10) as number;
-						const params: IDataObject = { limit };
-						if (ticker) params.ticker = ticker;
-						if (searchFor) params.searchFor = searchFor;
-
-						responseData = await makeRequest.call(
-							this,
-							'getNews',
 							params,
 							authentication,
 							authData,
@@ -1271,15 +1273,32 @@ export class Freedom24 implements INodeType {
 							authentication,
 							authData,
 						);
-					else if (operation === 'getTrades')
+					else if (operation === 'getTrades') {
+						const tradeId = this.getNodeParameter('tradeId', i) as number;
+						const max = this.getNodeParameter('maxResults', i) as number;
+						const ticker = this.getNodeParameter('ticker', i, '') as string;
+						const curr = this.getNodeParameter('currency', i, '') as string;
+						const reception = this.getNodeParameter('receptionId', i) as number;
+
+						const payload: IDataObject = {
+							beginDate: from.split('T')[0],
+							endDate: till.split('T')[0],
+						};
+
+						if (tradeId > 0) payload.tradeId = tradeId;
+						if (max > 0) payload.max = max;
+						if (ticker) payload.nt_ticker = ticker;
+						if (curr) payload.curr = curr;
+						if (reception > 0) payload.reception = reception;
+
 						responseData = await makeRequest.call(
 							this,
 							'getTradesHistory',
-							{ beginDate: from.split('T')[0], endDate: till.split('T')[0] },
+							payload,
 							authentication,
 							authData,
 						);
-					else if (operation === 'getCashflows') {
+					} else if (operation === 'getCashflows') {
 						const userId = this.getNodeParameter('userId', i, 0) as number;
 						const groupByType = this.getNodeParameter('groupByType', i, false) as boolean;
 						const cashTotals = this.getNodeParameter('cashTotals', i, false) as boolean;

@@ -1,9 +1,9 @@
 {
-	"node": "n8n-nodes-base.freedom24",
+	"node": "n8n-nodes-freedom24.freedom24",
 	"nodeVersion": "1.0",
 	"codexVersion": "1.0",
 	"categories": [
-		"Sales"
+		"Finance"
 	],
 	"resources": {
 		"credentialDocumentation": [

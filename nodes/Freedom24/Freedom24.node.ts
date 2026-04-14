@@ -817,6 +817,14 @@ export class Freedom24 implements INodeType {
 				description: 'Comma-separated list of currencies',
 			},
 			{
+				displayName: 'Date',
+				name: 'fxDate',
+				type: 'dateTime',
+				displayOptions: { show: { resource: ['fx'], operation: ['getRates'] } },
+				default: '',
+				description: 'Date for historical rates (optional, defaults to today)',
+			},
+			{
 				displayName: 'Command',
 				name: 'command',
 				type: 'string',
@@ -1381,19 +1389,23 @@ export class Freedom24 implements INodeType {
 						}
 					}
 				} else if (resource === 'fx') {
-					if (operation === 'getRates')
+					if (operation === 'getRates') {
+						const fxDate = this.getNodeParameter('fxDate', i, '') as string;
+						const fxParams: IDataObject = {
+							base_currency: this.getNodeParameter('baseCurrency', i) as string,
+							currencies: (this.getNodeParameter('currencies', i) as string)
+								.split(',')
+								.map((c) => c.trim()),
+						};
+						if (fxDate) fxParams.date = fxDate.split('T')[0];
 						responseData = await makeRequest.call(
 							this,
 							'getCrossRatesForDate',
-							{
-								base_currency: this.getNodeParameter('baseCurrency', i) as string,
-								currencies: (this.getNodeParameter('currencies', i) as string)
-									.split(',')
-									.map((c) => c.trim()),
-							},
+							fxParams,
 							authentication,
 							authData,
 						);
+					}
 				} else if (resource === 'dynamic') {
 					if (operation === 'call') {
 						const command = this.getNodeParameter('command', i) as string;

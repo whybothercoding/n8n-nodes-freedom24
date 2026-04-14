@@ -1414,8 +1414,8 @@ export class Freedom24 implements INodeType {
 						} else {
 							responseData = await makeRequest.call(
 								this,
-								'callCommand',
-								{ command, parameters: params },
+								command,
+								params,
 								authentication,
 								authData,
 							);

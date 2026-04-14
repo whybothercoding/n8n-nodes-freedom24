@@ -849,7 +849,7 @@ export class Freedom24 implements INodeType {
 					},
 					hide: {
 						resource: ['order', 'watchlist', 'alert'],
-						operation: ['getAll', 'select'],
+						operation: ['getAll'],
 					},
 				},
 				default: false,
@@ -865,7 +865,7 @@ export class Freedom24 implements INodeType {
 					},
 					hide: {
 						resource: ['order', 'watchlist', 'alert'],
-						operation: ['getAll', 'select'],
+						operation: ['getAll'],
 					},
 				},
 				default: false,
@@ -1181,14 +1181,26 @@ export class Freedom24 implements INodeType {
 								authData,
 							);
 						}
-					} else if (operation === 'select')
-						responseData = await makeRequest.call(
-							this,
-							'makeStockListSelected',
-							{ id: this.getNodeParameter('listId', i) as number },
-							authentication,
-							authData,
-						);
+					} else if (operation === 'select') {
+						const selectParams = { id: this.getNodeParameter('listId', i) as number };
+						if (dryRun) {
+							responseData = { dryRun: true, command: 'makeStockListSelected', params: selectParams };
+						} else if (!confirm) {
+							throw new NodeOperationError(
+								this.getNode(),
+								'Refusing to change active watchlist without confirm=true',
+								{ itemIndex: i },
+							);
+						} else {
+							responseData = await makeRequest.call(
+								this,
+								'makeStockListSelected',
+								selectParams,
+								authentication,
+								authData,
+							);
+						}
+					}
 					else if (operation === 'addTicker') {
 						const index = this.getNodeParameter('index', i) as number;
 						const payload: IDataObject = {

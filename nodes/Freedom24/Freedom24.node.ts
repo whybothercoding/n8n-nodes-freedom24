@@ -7,6 +7,7 @@ import {
 	NodeOperationError,
 	IDataObject,
 	JsonObject,
+	NodeConnectionTypes,
 } from 'n8n-workflow';
 
 import * as crypto from 'crypto';
@@ -19,11 +20,12 @@ export class Freedom24 implements INodeType {
 		group: ['transform'],
 		version: 1,
 		description: 'Interact with Freedom24 / Tradernet API',
+		subtitle: '={{$parameter["operation"] + ": " + $parameter["resource"]}}',
 		defaults: {
 			name: 'Freedom24',
 		},
-		inputs: ['main'],
-		outputs: ['main'],
+		inputs: [NodeConnectionTypes.Main],
+		outputs: [NodeConnectionTypes.Main],
 		credentials: [
 			{
 				name: 'freedom24Api',

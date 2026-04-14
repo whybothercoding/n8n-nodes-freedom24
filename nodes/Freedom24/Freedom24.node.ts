@@ -384,7 +384,7 @@ export class Freedom24 implements INodeType {
 						],
 					},
 					hide: {
-						resource: ['security', 'watchlist', 'alert'],
+						resource: ['security', 'watchlist'],
 						operation: ['getAll'],
 					},
 				},

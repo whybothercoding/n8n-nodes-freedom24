@@ -15,12 +15,19 @@
 		"type": "git",
 		"url": "https://github.com/theoslasha/n8n-nodes-freedom24.git"
 	},
+	"engines": {
+		"node": ">=20.0.0"
+	},
 	"scripts": {
 		"build": "n8n-node build",
 		"build:watch": "tsc --watch",
 		"dev": "n8n-node dev",
 		"lint": "n8n-node lint",
 		"lint:fix": "n8n-node lint --fix",
+		"test": "vitest run",
+		"test:watch": "vitest",
+		"test:coverage": "vitest run --coverage",
+		"typecheck": "tsc --noEmit",
 		"release": "n8n-node release",
 		"prepublishOnly": "n8n-node prerelease"
 	},
@@ -40,12 +47,14 @@
 	},
 	"devDependencies": {
 		"@n8n/node-cli": "*",
+		"@types/node": "^20.0.0",
+		"@vitest/coverage-v8": "^4.1.11",
 		"eslint": "9.32.0",
-		"n8n-core": "^2.1.1",
 		"n8n-workflow": "^2.1.0",
 		"prettier": "3.6.2",
 		"release-it": "^19.0.4",
-		"typescript": "5.9.2"
+		"typescript": "5.9.2",
+		"vitest": "^4.1.11"
 	},
 	"peerDependencies": {
 		"n8n-workflow": "*"

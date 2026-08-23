@@ -13,7 +13,12 @@ This repository contains a native n8n community node for the Freedom24 (Traderne
 
 ### Testing
 
-Automated unit tests are not currently implemented. Verification is performed by:
+- **Unit tests**: `npm test` (Vitest, offline — pure payload/response/auth logic, no live API calls)
+- **Watch mode**: `npm run test:watch`
+- **Coverage**: `npm run test:coverage`
+- **Type check only**: `npm run typecheck`
+
+Live-instance verification is still required for anything a unit test can't reach (real HTTP round-trips, n8n's own parameter-visibility engine):
 
 1. Building the project (`npm run build`).
 2. Deploying to a test n8n instance (copying `dist/` and `package.json`).
@@ -21,11 +26,18 @@ Automated unit tests are not currently implemented. Verification is performed by
 
 ## 2. Project Structure
 
-- `nodes/Freedom24/Freedom24.node.ts`: Main node logic, UI properties, and API request handling.
+- `nodes/Freedom24/Freedom24.node.ts`: Node description assembly, `execute()` dispatch, `methods` (credentialTest/loadOptions/listSearch).
+- `nodes/Freedom24/descriptions/`: Per-resource property definitions.
+- `nodes/Freedom24/actions/`: Per-resource operation handlers.
+- `nodes/Freedom24/transport/`: HMAC signing, endpoint resolution, session login, retry.
+- `nodes/Freedom24/helpers/`: Pure payload builders, response unwrapping/error detection, guarded JSON parsing — the unit-test seam.
+- `nodes/Freedom24/types/`: Shared Tradernet API types.
 - `credentials/Freedom24Api.credentials.ts`: API Key authentication definition.
 - `credentials/Freedom24UserApi.credentials.ts`: User Login (Session-based) authentication definition.
 - `icons/`: SVG icons for the node.
-- `freedom-mcp-server/`: Reference implementation containing API logic and types.
+- `test/`: Vitest specs, mirroring the `nodes/Freedom24/` layout.
+
+There is no `freedom-mcp-server/` reference checkout in this repo — it previously existed as a git-tracked symlink to a path on the author's machine, which broke on every other clone and leaked a local filesystem path on a public repo. It was removed; the MCP server it pointed to is a separate, unrelated project.
 
 ## 3. Code Style Guidelines
 

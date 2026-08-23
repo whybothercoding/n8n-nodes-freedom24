@@ -39,9 +39,11 @@ The node supports the following operations organized by resource:
   - **Get Top**: Identify most traded or fastest-growing securities.
 - **News**: Retrieve market news filtered by ticker or search term.
 - **Alert**: Manage price alerts (create, list, delete, toggle).
-- **FX**: Get foreign exchange cross rates for multiple currencies.
+- **FX**: Get foreign exchange cross rates for multiple currencies, optionally for a historical date.
 - **Market**: Check market open/close statuses.
 - **Dynamic**: Execute any raw Tradernet API command with custom JSON parameters.
+
+Tradernet's news endpoint (`get_news` in the API) currently returns "Command not found" for all callers due to regional/server restrictions on the vendor's side, so no News resource is exposed here.
 
 ## AI Agent Readiness
 
@@ -76,6 +78,8 @@ This node was built and tested with n8n version 1.x. It should be compatible wit
 - **Lint**: `npm run lint`
 - **Fix Lint**: `npm run lint:fix`
 - **Watch**: `npm run build:watch`
+- **Test**: `npm test` (Vitest — offline unit tests for signing, payload construction, and response handling)
+- **Type check**: `npm run typecheck`
 
 ### Code Style
 

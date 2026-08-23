@@ -16,7 +16,7 @@ This repository contains a native n8n community node for the Freedom24 (Traderne
 - **Unit tests**: `npm test` (Vitest, offline — pure payload/response/auth logic, no live API calls)
 - **Watch mode**: `npm run test:watch`
 - **Coverage**: `npm run test:coverage`
-- **Type check only**: `npm run typecheck`
+- **Type check only**: `npm run typecheck` (uses `tsconfig.test.json`, which also covers `test/` — the plain root `tsconfig.json` only covers `nodes/`+`credentials/` and is what `npm run build` uses)
 
 Live-instance verification is still required for anything a unit test can't reach (real HTTP round-trips, n8n's own parameter-visibility engine):
 
@@ -26,14 +26,15 @@ Live-instance verification is still required for anything a unit test can't reac
 
 ## 2. Project Structure
 
-- `nodes/Freedom24/Freedom24.node.ts`: Node description assembly, `execute()` dispatch, `methods` (credentialTest/loadOptions/listSearch).
-- `nodes/Freedom24/descriptions/`: Per-resource property definitions.
-- `nodes/Freedom24/actions/`: Per-resource operation handlers.
-- `nodes/Freedom24/transport/`: HMAC signing, endpoint resolution, session login, retry.
-- `nodes/Freedom24/helpers/`: Pure payload builders, response unwrapping/error detection, guarded JSON parsing — the unit-test seam.
+- `nodes/Freedom24/Freedom24.node.ts`: Node description assembly, `execute()` loop (auth setup, pairedItem, continueOnFail), `methods` (credentialTest/listSearch).
+- `nodes/Freedom24/descriptions/`: Per-resource property definitions. Each resource owns its own copies of shared-name fields (Ticker, Confirm, Dry Run) scoped to exactly the operations that use them — don't reintroduce one shared field with a show/hide matrix spanning multiple resources; that's what caused the original displayOptions leakage bugs.
+- `nodes/Freedom24/actions/`: One handler per resource (`execute(this, i, operation, auth)`), plus `router.ts` — the single dispatch point, and the only place a pure helper's `PayloadValidationError`/`JsonParamParseError` gets translated into `NodeOperationError` with `itemIndex`.
+- `nodes/Freedom24/transport/`: `signing.ts` (pure HMAC), `request.ts` (endpoint resolution/fallback, `makeRequest`), `session.ts` (User Login).
+- `nodes/Freedom24/helpers/`: Pure payload builders (`payloads.ts`), response unwrapping/error detection (`responses.ts`), guarded JSON parsing (`parse.ts`), the ticker resourceLocator adapter (`ticker.ts`), the confirm/dryRun guard (`guard.ts`), the `dynamic.call` mutation heuristic (`mutation.ts`) — none of these touch `IExecuteFunctions`, which is what makes them directly unit-testable.
+- `nodes/Freedom24/methods/`: Real `credentialTest` probes and Ticker's `listSearch`.
 - `nodes/Freedom24/types/`: Shared Tradernet API types.
-- `credentials/Freedom24Api.credentials.ts`: API Key authentication definition.
-- `credentials/Freedom24UserApi.credentials.ts`: User Login (Session-based) authentication definition.
+- `credentials/Freedom24Api.credentials.ts`: API Key authentication definition (no declarative `test` — tested via `methods.credentialTest.freedom24ApiCredentialTest`, referenced by `testedBy` on the node's credentials array).
+- `credentials/Freedom24UserApi.credentials.ts`: User Login (session-based) authentication definition (same pattern, `freedom24UserApiCredentialTest`).
 - `icons/`: SVG icons for the node.
 - `test/`: Vitest specs, mirroring the `nodes/Freedom24/` layout.
 
@@ -62,13 +63,9 @@ There is no `freedom-mcp-server/` reference checkout in this repo — it previou
 
 ### Error Handling
 
-- Use `NodeOperationError` for user-facing errors within `execute`.
-- **Crucial**: Always provide `{ itemIndex: i }` as the last argument to `NodeOperationError` to help users identify which input failed.
-- Use `NodeApiError` for low-level HTTP failures.
-
-```typescript
-throw new NodeOperationError(this.getNode(), 'Description of error', { itemIndex: i });
-```
+- Prefer a pure helper that throws a domain error (`PayloadValidationError` in `helpers/payloads.ts`, `JsonParamParseError` in `helpers/parse.ts`) over reaching for `NodeOperationError` inside a pure function — pure functions don't have `this.getNode()`. `actions/router.ts` is the one place these get translated into a real `NodeOperationError` with `itemIndex` attached.
+- Where an action does need to throw directly (a confirm-gate, an unmatched operation), use `NodeOperationError` and **always** provide `{ itemIndex: i }`.
+- Use `NodeApiError` for low-level HTTP failures and API-level rejections (`transport/request.ts`'s `makeRequest` is the only place that constructs these).
 
 ### Resource/Operation Pattern
 
@@ -86,6 +83,10 @@ All operations that modify state (Place Order, Cancel, Create Watchlist, etc.) *
 - `confirm`: A boolean toggle to prevent accidental execution.
 - `dryRun`: A boolean toggle that returns the request payload without sending it to the API.
 
+Use `helpers/guard.ts`'s `requireConfirmed()` rather than hand-rolling the check.
+
+`dynamic.call` can't rely on a fixed operation list — the command is arbitrary user input — so it uses `helpers/mutation.ts`'s `looksLikeMutatingCommand()`, a conservative prefix-based heuristic (`put`, `delete`/`del`, `add`, `update`, `toggle`, `make`, `cancel`, `remove`, `create`, `set`, `save`, `edit`). If you add a new mutating Tradernet command name that doesn't start with one of these, add its prefix to the list — the heuristic must stay biased toward over-blocking (annoying but safe) rather than under-blocking (a real mutation slipping through unconfirmed).
+
 ### AI Tooling
 
 - The node has `usableAsTool: true`.
@@ -94,101 +95,30 @@ All operations that modify state (Place Order, Cancel, Create Watchlist, etc.) *
 
 ## 5. API Implementation Notes
 
-- The API uses HMAC signatures for API Key auth. This is implemented in the `makeRequest` helper function.
-- Session-based auth (User Login) involves a separate login call and a `SID` cookie extraction.
-- Version 2 API calls (`putOrderV2`, `putStopLoss`) use a different base URL (`/api/v2/cmd/`).
+- HMAC signing for API Key auth lives in `transport/signing.ts` (pure — `signPayload`/`buildApiKeyHeaders`) and is exercised by `transport/request.ts`.
+- Session-based auth (User Login) involves `transport/session.ts`'s `getSessionId()` — a separate login call (**form-urlencoded**, not JSON — Tradernet's documented contract) and a `SID` cookie extraction. Accounts requiring SMS/2FA confirmation on login are not supported; `getSessionId` throws a message saying so rather than hanging or silently failing.
+- Every request goes through `transport/request.ts`'s `makeRequest(this, command, params, auth, strategy)`. `strategy` is mandatory, not defaulted, so every call site states its intent explicitly:
+  - `'fixedV2'` — the two proven trading mutations (`putOrderV2`, `putStopLoss`). No fallback, ever.
+  - `'fixedV1'` — every other built-in mutating command (`deleteOrder`, `addStockList`, `updateStockList`, `deleteStockList`, `makeStockListSelected`, `addStockListTicker`, `deleteStockListTicker`, `togglePriceAlert`). No fallback.
+  - `'auto'` — every read-only command, and `dynamic.call` regardless of what it turns out to be. Falls back v2 → v1 → v1-wrapped-query, but **only** on an unambiguous 404 or `{error: "Command not found"}` — never on a 5xx/timeout, because a mutating command may have already executed server-side and a fallback retry there could resubmit it.
+- **Tradernet returns HTTP 200 with `{error}`/`{errMsg}` bodies on failure.** `makeRequest` checks the body for this on every response, in addition to the HTTP status — don't add a new call path that skips this check.
+- **No retry-with-delay.** n8n community nodes run sandboxed for cloud compatibility, and `setTimeout`/`setInterval` are banned globals there (`@n8n/community-nodes/no-restricted-globals`). There's no way to implement a real backoff delay inside `execute()`. Don't reach for one — a same-tick retry on 429 just hits the rate limit again, so failures surface immediately instead of faking a backoff that isn't one.
+- **`eslint.config.mjs` must stay byte-identical to the `@n8n/node-cli` default template.** `package.json`'s `n8n.strict: true` enforces this at lint time (`n8n-node lint` diffs it against the shipped template and hard-fails on any difference). If a file genuinely needs an exemption from a rule (test files needing `vitest`/`no-restricted-imports`, `ICredentialTestFunctions.helpers.request` being deprecated with no alternative in that context), use an inline `// eslint-disable-next-line <rule>` comment with a one-line reason, not a config change.
 
-## 6. Code Examples
+## 6. Adding a New Operation
 
-### Standard Request Helper
+1. Add the property definitions to the relevant `descriptions/<Resource>.description.ts` — scoped to that resource+operation only (see §2 on shared-name fields).
+2. If the operation mutates state, add it to that resource's `buildConfirmAndDryRun(...)` operation list.
+3. If payload construction is non-trivial, add a pure builder to `helpers/payloads.ts` (parameters in, `IDataObject` out, no `IExecuteFunctions`) and a test in `test/helpers/payloads.test.ts`.
+4. Add the branch to the resource's `actions/<resource>.ts` `execute()` — read parameters, call the builder, gate on confirm/dryRun via `requireConfirmed()` if mutating, call `makeRequest` with an explicit `strategy`.
+5. `npm run build && npm run lint && npm test` before considering it done.
 
-The node uses a central `makeRequest` function to handle API signatures and communication.
-
-```typescript
-async function makeRequest(
-	this: IExecuteFunctions,
-	command: string,
-	params: IDataObject,
-	authType: string,
-	authData: IDataObject,
-	useV2 = false,
-) {
-	// API Key Auth logic with HMAC signatures
-	// User Login Auth logic with SID session cookies
-}
-```
-
-### Resource Execution Pattern
-
-Logic within the `execute` method is structured by resource and then operation.
-
-```typescript
-for (let i = 0; i < items.length; i++) {
-	try {
-		if (resource === 'portfolio') {
-			if (operation === 'getAll') {
-				responseData = await makeRequest.call(this, 'getOPQ', {}, authentication, authData);
-			}
-		} else if (resource === 'order') {
-			if (operation === 'place') {
-				const confirm = this.getNodeParameter('confirm', i, false) as boolean;
-				const dryRun = this.getNodeParameter('dryRun', i, false) as boolean;
-				// ... validation and payload building
-				if (dryRun) {
-					responseData = { dryRun: true, command: 'putOrderV2', params: orderParams };
-				} else if (!confirm) {
-					throw new NodeOperationError(this.getNode(), 'Confirm must be true', { itemIndex: i });
-				} else {
-					responseData = await makeRequest.call(
-						this,
-						'putOrderV2',
-						orderParams,
-						authentication,
-						authData,
-						true,
-					);
-				}
-			}
-		}
-		// ... return data processing
-	} catch (error) {
-		if (this.continueOnFail()) {
-			returnData.push({ json: { error: error.message } });
-			continue;
-		}
-		throw error;
-	}
-}
-```
-
-## 7. Advanced UI Patterns
-
-### Dynamic Tooling
-
-The node is designed to be highly compatible with AI agents (e.g., using n8n's AI Agent node).
-
-- **Property Descriptions**: Must be verbose and explain exactly what the input expects (e.g., "The ticker symbol including the market suffix like AAPL.US").
-- **Dry Run Return**: When `dryRun` is enabled, always return a JSON object describing the action that _would_ have been taken. This helps agents "pre-flight" their decisions.
-
-### Complex Data Inputs
-
-For operations like `getAllSecurities` or `getCashflows`, use JSON string parameters for filters and sorting to provide full flexibility while keeping the UI clean.
-
-```typescript
-{
-	displayName: 'Filters (JSON)',
-	name: 'filtersJson',
-	type: 'string',
-	default: '[]',
-	description: 'Filters array as JSON (e.g., [{"field":"ticker","operator":"eq","value":"AAPL.US"}])',
-}
-```
-
-## 8. Deployment Checklist
+## 7. Deployment Checklist
 
 Before finalizing any changes, ensure:
 
 1. `npm run build` completes without errors.
 2. `npm run lint` passes all n8n-specific rules.
-3. Version in `package.json` is appropriately incremented if releasing.
-4. Static files (SVG icons, JSON schemas) are correctly copied to `dist/`.
+3. `npm test` passes.
+4. Version in `package.json` is appropriately incremented if releasing.
+5. Static files (SVG icons, JSON schemas) are correctly copied to `dist/`.

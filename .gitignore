@@ -3,6 +3,7 @@ node_modules
 *.tar.gz
 *.tgz
 *.tsbuildinfo
+.tsbuildinfo/
 test_workflow.json
 .DS_Store
 coverage

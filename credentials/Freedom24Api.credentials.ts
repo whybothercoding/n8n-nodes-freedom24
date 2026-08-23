@@ -5,12 +5,9 @@ export class Freedom24Api implements ICredentialType {
 	displayName = 'Freedom24 API';
 	documentationUrl = 'https://tradernet.com/api';
 	icon = 'file:freedom24.svg' as const;
-	test = {
-		request: {
-			baseURL: 'https://tradernet.com/api',
-			url: '/getMarketStatus',
-		},
-	};
+	// Tested by the Freedom24 node's methods.credentialTest.freedom24ApiCredentialTest — a real
+	// HMAC-signed probe, not the unauthenticated GET this used to declare (which passed for any
+	// input, valid or not).
 	properties: INodeProperties[] = [
 		{
 			displayName: 'Public Key',

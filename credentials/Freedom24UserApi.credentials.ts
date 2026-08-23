@@ -5,12 +5,9 @@ export class Freedom24UserApi implements ICredentialType {
 	displayName = 'Freedom24 User Login API';
 	documentationUrl = 'https://tradernet.com/api';
 	icon = 'file:freedom24.svg' as const;
-	test = {
-		request: {
-			baseURL: 'https://tradernet.com/api',
-			url: '/getMarketStatus',
-		},
-	};
+	// Tested by the Freedom24 node's methods.credentialTest.freedom24UserApiCredentialTest — a
+	// real login attempt, not the unauthenticated GET this used to declare (which passed for any
+	// input, valid or not).
 	properties: INodeProperties[] = [
 		{
 			displayName: 'Email / Login',

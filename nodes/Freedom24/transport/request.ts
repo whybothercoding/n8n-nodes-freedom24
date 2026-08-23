@@ -47,7 +47,15 @@ interface RawResult {
 
 function parseBody(body: unknown): IDataObject {
 	if (typeof body === 'string') {
-		return body.length > 0 ? (JSON.parse(body) as IDataObject) : {};
+		if (body.length === 0) return {};
+		try {
+			return JSON.parse(body) as IDataObject;
+		} catch {
+			// A non-2xx response (a proxy error page, a plain-text 500) isn't guaranteed to be JSON.
+			// Keep it as an opaque error body rather than letting JSON.parse throw and mask the real
+			// HTTP status behind a generic "request failed".
+			return { raw: body };
+		}
 	}
 	return (body ?? {}) as IDataObject;
 }
@@ -140,20 +148,20 @@ async function resolve(
 	params: IDataObject,
 	auth: AuthContext,
 	strategy: RequestStrategy,
-): Promise<IDataObject> {
+): Promise<RawResult> {
 	const mutating = isMutatingCommand(command);
 
 	if (auth.type === 'userLogin') {
 		// Session auth has one working request shape for every command — no v1/v2 split — so there
 		// is nothing to fall back to.
-		return (await requestSession.call(this, command, params, auth.sid)).body;
+		return requestSession.call(this, command, params, auth.sid);
 	}
 
 	if (strategy === 'fixedV2') {
-		return (await requestV2.call(this, command, params, auth)).body;
+		return requestV2.call(this, command, params, auth);
 	}
 	if (strategy === 'fixedV1') {
-		return (await requestV1.call(this, command, params, auth)).body;
+		return requestV1.call(this, command, params, auth);
 	}
 
 	// 'auto': read-only commands and the dynamic-call escape hatch. A fallback to a different
@@ -174,7 +182,7 @@ async function resolve(
 		result = await requestV1Wrapped.call(this, command, params, auth);
 	}
 
-	return result.body;
+	return result;
 }
 
 export async function makeRequest(
@@ -184,21 +192,29 @@ export async function makeRequest(
 	auth: AuthContext,
 	strategy: RequestStrategy,
 ): Promise<IDataObject> {
-	let body: IDataObject;
+	let result: RawResult;
 	try {
-		body = await resolve.call(this, command, params, auth, strategy);
+		result = await resolve.call(this, command, params, auth, strategy);
 	} catch (error) {
 		throw new NodeApiError(this.getNode(), error as JsonObject, {
 			message: `Freedom24 request failed for command "${command}"`,
 		});
 	}
 
-	const apiError = getApiError(body);
+	const apiError = getApiError(result.body);
 	if (apiError) {
-		throw new NodeApiError(this.getNode(), body as JsonObject, {
+		throw new NodeApiError(this.getNode(), result.body as JsonObject, {
 			message: `Freedom24 rejected "${command}": ${apiError}`,
 		});
 	}
 
-	return body;
+	// ignoreHttpStatusErrors above means a non-2xx with no Tradernet-style {error}/{errMsg} body
+	// (a plain 401/429/5xx) would otherwise pass through silently as if it were a valid response.
+	if (result.statusCode < 200 || result.statusCode >= 300) {
+		throw new NodeApiError(this.getNode(), result.body as JsonObject, {
+			message: `Freedom24 returned HTTP ${result.statusCode} for "${command}"`,
+		});
+	}
+
+	return result.body;
 }

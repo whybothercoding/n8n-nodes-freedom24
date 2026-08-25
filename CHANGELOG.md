@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.1] - 2026-08-25
+
+No functional changes. Republished via the new GitHub Actions workflow so this version carries an
+npm provenance attestation — required for n8n Creator Portal verification submission, which a
+locally-published version (0.2.0) can never satisfy since provenance can only be generated inside
+GitHub Actions' OIDC environment.
+
 ## [0.2.0] - 2026-08-23
 
 ### Fixed

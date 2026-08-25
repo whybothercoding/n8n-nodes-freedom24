@@ -1,6 +1,6 @@
 {
 	"name": "n8n-nodes-freedom24",
-	"version": "0.2.0",
+	"version": "0.2.1",
 	"description": "n8n node for Freedom24/Tradernet Trading API",
 	"license": "MIT",
 	"homepage": "https://indiegoweb.com",

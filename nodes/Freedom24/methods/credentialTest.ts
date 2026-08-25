@@ -1,6 +1,7 @@
 import { ICredentialsDecrypted, ICredentialTestFunctions, INodeCredentialTestResult } from 'n8n-workflow';
 
 import { buildApiKeyHeaders } from '../transport/signing';
+import { parseBody } from '../transport/request';
 import { getApiError } from '../helpers/responses';
 
 const BASE_URL = 'https://tradernet.com/api';
@@ -37,10 +38,7 @@ export async function freedom24ApiCredentialTest(
 			simple: false,
 		})) as { statusCode: number; body: unknown };
 
-		const body =
-			typeof response.body === 'string' && response.body.length > 0
-				? JSON.parse(response.body)
-				: response.body;
+		const body = parseBody(response.body);
 		const apiError = getApiError(body);
 
 		if (response.statusCode !== 200 || apiError) {
@@ -79,12 +77,10 @@ export async function freedom24UserApiCredentialTest(
 			return { status: 'Error', message: `Freedom24 returned HTTP ${response.statusCode}` };
 		}
 
-		const body =
-			typeof response.body === 'string' && response.body.length > 0
-				? (JSON.parse(response.body) as { error?: string })
-				: (response.body as { error?: string } | undefined);
-		if (body?.error) {
-			return { status: 'Error', message: body.error };
+		const body = parseBody(response.body);
+		const apiError = getApiError(body);
+		if (apiError) {
+			return { status: 'Error', message: apiError };
 		}
 
 		const setCookie = response.headers['set-cookie'];

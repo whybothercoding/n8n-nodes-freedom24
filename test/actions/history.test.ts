@@ -31,6 +31,27 @@ describe('history.getCashflows', () => {
 
 		await expect(router.call(ctx, 0, AUTH)).resolves.toEqual({ result: [] });
 	});
+
+	it('errors instead of silently dropping filtersJson when it is valid JSON but not an array', async () => {
+		const { ctx, httpCalls } = createFakeExecuteFunctions({
+			params: {
+				resource: 'history',
+				operation: 'getCashflows',
+				userId: 0,
+				groupByType: false,
+				cashTotals: false,
+				hideLimits: false,
+				take: 50,
+				skip: 0,
+				withoutRefund: false,
+				filtersJson: '{"field":"amount","op":"gt","value":100}',
+				sortJson: '[]',
+			},
+		});
+
+		await expect(router.call(ctx, 0, AUTH)).rejects.toThrow(/filtersJson/);
+		expect(httpCalls).toHaveLength(0);
+	});
 });
 
 describe('history.getOrders', () => {

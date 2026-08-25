@@ -38,6 +38,25 @@ export function intervalToMinutes(interval: string): number {
 	return INTERVAL_TO_MINUTES[interval] ?? INTERVAL_TO_MINUTES['1D'];
 }
 
+/**
+ * n8n's dateTime picker serializes to a UTC ISO string, which can carry a different calendar date
+ * than the one the user actually picked once shifted back to their own timezone (e.g. 11pm local
+ * in a UTC+ zone rolls over to the next UTC day). A plain `.split('T')[0]` on that UTC string would
+ * silently send Tradernet the wrong day, so the caller passes the workflow's configured timezone
+ * (this.getTimezone()) and this reformats the date within it instead. Falls back to the naive split
+ * for a value that doesn't parse as a date (e.g. already a bare "YYYY-MM-DD").
+ */
+export function toApiDateString(isoDateTime: string, timezone: string): string {
+	const date = new Date(isoDateTime);
+	if (Number.isNaN(date.getTime())) return isoDateTime.split('T')[0] ?? isoDateTime;
+	return new Intl.DateTimeFormat('en-CA', {
+		timeZone: timezone,
+		year: 'numeric',
+		month: '2-digit',
+		day: '2-digit',
+	}).format(date);
+}
+
 export interface PlaceOrderParams {
 	ticker: string;
 	side: 'buy' | 'sell';
@@ -206,6 +225,7 @@ export function buildCashflowsPayload(params: CashflowsParams): IDataObject {
 export interface TradesHistoryParams {
 	from: string;
 	till: string;
+	timezone: string;
 	tradeId?: number;
 	maxResults?: number;
 	ticker?: string;
@@ -215,8 +235,8 @@ export interface TradesHistoryParams {
 
 export function buildTradesHistoryPayload(params: TradesHistoryParams): IDataObject {
 	const payload: IDataObject = {
-		beginDate: params.from.split('T')[0],
-		endDate: params.till.split('T')[0],
+		beginDate: toApiDateString(params.from, params.timezone),
+		endDate: toApiDateString(params.till, params.timezone),
 	};
 	if (params.tradeId && params.tradeId > 0) payload.tradeId = params.tradeId;
 	if (params.maxResults && params.maxResults > 0) payload.max = params.maxResults;
@@ -243,6 +263,7 @@ export function buildSecuritiesQueryPayload(params: SecuritiesQueryParams): IDat
 export interface FxRatesParams {
 	baseCurrency: string;
 	currencies: string[];
+	timezone: string;
 	fxDate?: string;
 }
 
@@ -251,6 +272,6 @@ export function buildFxRatesPayload(params: FxRatesParams): IDataObject {
 		base_currency: params.baseCurrency,
 		currencies: params.currencies,
 	};
-	if (params.fxDate) payload.date = params.fxDate.split('T')[0];
+	if (params.fxDate) payload.date = toApiDateString(params.fxDate, params.timezone);
 	return payload;
 }

@@ -34,6 +34,9 @@ export type AuthContext =
  */
 export type RequestStrategy = 'fixedV2' | 'fixedV1' | 'auto';
 
+// Not the same list as helpers/mutation.ts's own MUTATING_PREFIXES — that one is the broad,
+// deliberately over-inclusive confirm-gate for dynamic.call; this one only decides whether the
+// 'auto' strategy below tries the v2 endpoint before v1 for known put/delete-style commands.
 const MUTATING_PREFIXES = ['put', 'del'];
 
 export function isMutatingCommand(command: string): boolean {
@@ -45,7 +48,9 @@ interface RawResult {
 	body: IDataObject;
 }
 
-function parseBody(body: unknown): IDataObject {
+/** Exported so other transport-adjacent code (session.ts, credentialTest.ts) shares this same
+ * "never let a non-JSON body throw a raw SyntaxError" guard instead of re-rolling it. */
+export function parseBody(body: unknown): IDataObject {
 	if (typeof body === 'string') {
 		if (body.length === 0) return {};
 		try {

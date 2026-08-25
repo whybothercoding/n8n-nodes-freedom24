@@ -1,6 +1,7 @@
 import { JsonObject, NodeApiError, NodeOperationError } from 'n8n-workflow';
 
-import { HttpContext } from './request';
+import { HttpContext, parseBody } from './request';
+import { getApiError } from '../helpers/responses';
 
 const BASE_URL = 'https://tradernet.com/api';
 
@@ -37,13 +38,11 @@ export async function getSessionId(
 		});
 	}
 
-	const body =
-		typeof response.body === 'string' && response.body.length > 0
-			? (JSON.parse(response.body) as { error?: string })
-			: (response.body as { error?: string } | undefined);
-	if (body?.error) {
+	const body = parseBody(response.body);
+	const apiError = getApiError(body);
+	if (apiError) {
 		throw new NodeApiError(this.getNode(), body as JsonObject, {
-			message: `Freedom24 login failed: ${body.error}`,
+			message: `Freedom24 login failed: ${apiError}`,
 		});
 	}
 
@@ -58,7 +57,9 @@ export async function getSessionId(
 	}
 
 	const cookies = Array.isArray(setCookie) ? setCookie.join(';') : setCookie;
-	const match = cookies.match(/SID=([^;]+)/);
+	// Anchored to a cookie-pair boundary (string start or "; ") so this can't match inside another
+	// cookie's name that happens to end in "SID" (e.g. PHPSESSID=... contains the substring "SID=").
+	const match = cookies.match(/(?:^|;\s*)SID=([^;]+)/);
 	if (!match) {
 		throw new NodeOperationError(
 			this.getNode(),

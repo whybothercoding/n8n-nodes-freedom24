@@ -40,6 +40,50 @@ describe('getSessionId', () => {
 		);
 	});
 
+	it('throws when the login body carries an errMsg field instead of error', async () => {
+		const { ctx } = createFakeExecuteFunctions({
+			params: {},
+			httpRequest: async () => ({
+				statusCode: 200,
+				body: JSON.stringify({ errMsg: 'invalid password' }),
+				headers: {},
+			}),
+		});
+
+		await expect(getSessionId.call(ctx, 'user@example.com', 'wrong')).rejects.toThrow(
+			/invalid password/,
+		);
+	});
+
+	it('fails cleanly instead of crashing on a non-JSON HTTP 200 body', async () => {
+		const { ctx } = createFakeExecuteFunctions({
+			params: {},
+			httpRequest: async () => ({
+				statusCode: 200,
+				body: '<html>not json</html>',
+				headers: {},
+			}),
+		});
+
+		await expect(getSessionId.call(ctx, 'user@example.com', 'hunter2')).rejects.toThrow(
+			/SMS\/2FA/,
+		);
+	});
+
+	it('extracts SID even when preceded by another cookie whose name ends in "SID"', async () => {
+		const { ctx } = createFakeExecuteFunctions({
+			params: {},
+			httpRequest: async () => ({
+				statusCode: 200,
+				body: '{}',
+				headers: { 'set-cookie': ['PHPSESSID=wrongvalue; Path=/', 'SID=rightvalue; Path=/'] },
+			}),
+		});
+
+		const sid = await getSessionId.call(ctx, 'user@example.com', 'hunter2');
+		expect(sid).toBe('rightvalue');
+	});
+
 	it('throws when the response has no session cookie (e.g. SMS/2FA required)', async () => {
 		const { ctx } = createFakeExecuteFunctions({
 			params: {},

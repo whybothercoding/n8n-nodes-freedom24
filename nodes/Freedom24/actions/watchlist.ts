@@ -64,21 +64,31 @@ export async function execute(
 
 	if (operation === 'update') {
 		const listId = this.getNodeParameter('listId', i) as number;
+		const rawName = this.getNodeParameter('name', i, '') as string;
+		const rawPicture = this.getNodeParameter('picture', i, '') as string;
+		const index = this.getNodeParameter('index', i, 0) as number;
+
+		// backfillFromCurrent makes a live read (getUserStockLists) when name/picture are left
+		// blank, so it must run after the dryRun check — dryRun=true must never touch the network.
+		if (dryRun) {
+			const params = buildWatchlistUpdatePayload({
+				listId,
+				name: rawName || undefined,
+				picture: rawPicture || undefined,
+				index,
+			});
+			return { dryRun: true, command: 'updateStockList', params };
+		}
+
+		requireConfirmed(this.getNode(), i, confirm, 'update a watchlist');
 		const { name, picture } = await backfillFromCurrent.call(
 			this,
 			auth,
 			listId,
-			this.getNodeParameter('name', i, '') as string,
-			this.getNodeParameter('picture', i, '') as string,
+			rawName,
+			rawPicture,
 		);
-		const params = buildWatchlistUpdatePayload({
-			listId,
-			name,
-			picture,
-			index: this.getNodeParameter('index', i, 0) as number,
-		});
-		if (dryRun) return { dryRun: true, command: 'updateStockList', params };
-		requireConfirmed(this.getNode(), i, confirm, 'update a watchlist');
+		const params = buildWatchlistUpdatePayload({ listId, name, picture, index });
 		return makeRequest.call(this, 'updateStockList', params, auth, 'fixedV1');
 	}
 

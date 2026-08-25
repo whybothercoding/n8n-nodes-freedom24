@@ -66,8 +66,8 @@ describe('watchlist.update', () => {
 		expect(calls).toEqual(['https://tradernet.com/api/updateStockList']);
 	});
 
-	it('a dry run reflects the backfilled values, since backfill is read-only', async () => {
-		const { ctx } = createFakeExecuteFunctions({
+	it('a dry run never calls the network, even when name/picture are left blank', async () => {
+		const { ctx, httpCalls } = createFakeExecuteFunctions({
 			params: {
 				resource: 'watchlist',
 				operation: 'update',
@@ -78,16 +78,38 @@ describe('watchlist.update', () => {
 				dryRun: true,
 				confirm: false,
 			},
-			httpRequest: async () => ({
-				statusCode: 200,
-				body: JSON.stringify({ userStockLists: [{ id: 42, name: 'Existing', picture: '📈' }] }),
-			}),
+			httpRequest: async () => {
+				throw new Error('dryRun must not call the network');
+			},
 		});
 
 		const result = await router.call(ctx, 0, AUTH);
+		expect(httpCalls).toHaveLength(0);
 		expect(result).toMatchObject({
 			dryRun: true,
-			params: { id: 42, name: 'Existing', picture: '📈', index: 0 },
+			params: { id: 42, index: 0 },
+		});
+	});
+
+	it('a dry run reflects the raw provided values, unbackfilled', async () => {
+		const { ctx, httpCalls } = createFakeExecuteFunctions({
+			params: {
+				resource: 'watchlist',
+				operation: 'update',
+				listId: 42,
+				name: 'Draft Name',
+				picture: '',
+				index: 0,
+				dryRun: true,
+				confirm: false,
+			},
+		});
+
+		const result = await router.call(ctx, 0, AUTH);
+		expect(httpCalls).toHaveLength(0);
+		expect(result).toMatchObject({
+			dryRun: true,
+			params: { id: 42, name: 'Draft Name', index: 0 },
 		});
 	});
 });

@@ -19,6 +19,7 @@ export interface FakeExecuteFunctionsOptions {
 	items?: INodeExecutionData[];
 	continueOnFail?: boolean;
 	httpRequest?: (options: IHttpRequestOptions) => Promise<FakeHttpResponse> | FakeHttpResponse;
+	timezone?: string;
 }
 
 export interface FakeExecuteFunctionsResult {
@@ -70,6 +71,9 @@ export function createFakeExecuteFunctions(
 		},
 		continueOnFail(): boolean {
 			return options.continueOnFail ?? false;
+		},
+		getTimezone(): string {
+			return options.timezone ?? 'UTC';
 		},
 		helpers: {
 			async httpRequest(requestOptions: IHttpRequestOptions): Promise<FakeHttpResponse> {

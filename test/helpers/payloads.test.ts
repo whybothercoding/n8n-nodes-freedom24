@@ -16,6 +16,7 @@ import {
 	buildWatchlistUpdatePayload,
 	intervalToMinutes,
 	splitCsv,
+	toApiDateString,
 } from '../../nodes/Freedom24/helpers/payloads';
 
 describe('splitCsv', () => {
@@ -273,19 +274,46 @@ describe('buildCashflowsPayload', () => {
 	});
 });
 
+describe('toApiDateString', () => {
+	it('takes the date-only portion of a UTC ISO datetime under the UTC timezone', () => {
+		expect(toApiDateString('2026-01-01T00:00:00.000Z', 'UTC')).toBe('2026-01-01');
+	});
+
+	it('shifts to the correct local calendar date for a non-UTC timezone', () => {
+		// 2026-01-01T23:30:00Z is already 2026-01-02 in UTC+1 — the naive .split('T')[0] this
+		// replaces would have wrongly reported 2026-01-01.
+		expect(toApiDateString('2026-01-01T23:30:00.000Z', 'Europe/Athens')).toBe('2026-01-02');
+	});
+
+	it('falls back to a naive split for a value Date cannot parse', () => {
+		expect(toApiDateString('not-a-date', 'UTC')).toBe('not-a-date');
+	});
+});
+
 describe('buildTradesHistoryPayload', () => {
 	it('takes the date-only portion of ISO datetimes', () => {
 		const payload = buildTradesHistoryPayload({
 			from: '2026-01-01T00:00:00.000Z',
 			till: '2026-01-31T23:59:59.000Z',
+			timezone: 'UTC',
 		});
 		expect(payload).toEqual({ beginDate: '2026-01-01', endDate: '2026-01-31' });
+	});
+
+	it('resolves the date in the given timezone, not UTC', () => {
+		const payload = buildTradesHistoryPayload({
+			from: '2026-01-01T23:30:00.000Z',
+			till: '2026-01-31T23:59:59.000Z',
+			timezone: 'Europe/Athens',
+		});
+		expect(payload.beginDate).toBe('2026-01-02');
 	});
 
 	it('includes optional filters only when set', () => {
 		const payload = buildTradesHistoryPayload({
 			from: '2026-01-01',
 			till: '2026-01-31',
+			timezone: 'UTC',
 			ticker: 'AAPL.US',
 			receptionId: 0,
 			tradeId: 0,
@@ -313,7 +341,9 @@ describe('buildSecuritiesQueryPayload', () => {
 
 describe('buildFxRatesPayload', () => {
 	it('omits date when not provided', () => {
-		expect(buildFxRatesPayload({ baseCurrency: 'USD', currencies: ['EUR'] })).toEqual({
+		expect(
+			buildFxRatesPayload({ baseCurrency: 'USD', currencies: ['EUR'], timezone: 'UTC' }),
+		).toEqual({
 			base_currency: 'USD',
 			currencies: ['EUR'],
 		});
@@ -323,6 +353,7 @@ describe('buildFxRatesPayload', () => {
 		const payload = buildFxRatesPayload({
 			baseCurrency: 'USD',
 			currencies: ['EUR'],
+			timezone: 'UTC',
 			fxDate: '2026-03-01T12:00:00.000Z',
 		});
 		expect(payload.date).toBe('2026-03-01');

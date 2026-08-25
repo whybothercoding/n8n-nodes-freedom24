@@ -2,7 +2,7 @@ import { IExecuteFunctions, IDataObject, NodeOperationError } from 'n8n-workflow
 
 import { AuthContext, makeRequest } from '../transport/request';
 import { buildCashflowsPayload, buildTradesHistoryPayload } from '../helpers/payloads';
-import { parseJsonParam } from '../helpers/parse';
+import { parseJsonArrayParam } from '../helpers/parse';
 import { resolveTickerParam } from '../helpers/ticker';
 
 export async function execute(
@@ -26,6 +26,7 @@ export async function execute(
 		const params = buildTradesHistoryPayload({
 			from,
 			till,
+			timezone: this.getTimezone(),
 			tradeId: this.getNodeParameter('tradeId', i, 0) as number,
 			maxResults: this.getNodeParameter('maxResults', i, 0) as number,
 			ticker: resolveTickerParam(this.getNodeParameter('ticker', i, '')),
@@ -36,11 +37,11 @@ export async function execute(
 	}
 
 	if (operation === 'getCashflows') {
-		const filters = parseJsonParam<unknown[]>(
+		const filters = parseJsonArrayParam(
 			'filtersJson',
 			this.getNodeParameter('filtersJson', i, '[]') as string,
 		);
-		const sort = parseJsonParam<unknown[]>(
+		const sort = parseJsonArrayParam(
 			'sortJson',
 			this.getNodeParameter('sortJson', i, '[]') as string,
 		);

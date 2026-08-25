@@ -23,6 +23,22 @@ describe('looksLikeMutatingCommand', () => {
 		}
 	});
 
+	it('flags trading/account verbs not covered by the built-in fixed commands', () => {
+		for (const command of [
+			'buyStock',
+			'sellStock',
+			'closePosition',
+			'confirmOrder',
+			'rejectOrder',
+			'withdrawFunds',
+			'transferCash',
+			'convertCurrency',
+			'exerciseOption',
+		]) {
+			expect(looksLikeMutatingCommand(command)).toBe(true);
+		}
+	});
+
 	it('does not flag read-only commands', () => {
 		for (const command of ['getOPQ', 'getStockQuotesJson', 'getMarketStatus', 'tickerFinder']) {
 			expect(looksLikeMutatingCommand(command)).toBe(false);

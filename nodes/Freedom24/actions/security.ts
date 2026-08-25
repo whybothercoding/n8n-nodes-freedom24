@@ -2,7 +2,7 @@ import { IExecuteFunctions, IDataObject, NodeOperationError } from 'n8n-workflow
 
 import { AuthContext, makeRequest } from '../transport/request';
 import { buildSecuritiesQueryPayload } from '../helpers/payloads';
-import { parseJsonParam } from '../helpers/parse';
+import { parseJsonArrayParam } from '../helpers/parse';
 import { resolveTickerParam } from '../helpers/ticker';
 
 export async function execute(
@@ -17,11 +17,11 @@ export async function execute(
 	}
 
 	if (operation === 'getAll') {
-		const filters = parseJsonParam<unknown[]>(
+		const filters = parseJsonArrayParam(
 			'filtersJson',
 			this.getNodeParameter('filtersJson', i, '[]') as string,
 		);
-		const sort = parseJsonParam<unknown[]>(
+		const sort = parseJsonArrayParam(
 			'sortJson',
 			this.getNodeParameter('sortJson', i, '[]') as string,
 		);

@@ -3,6 +3,7 @@ import { IExecuteFunctions, IDataObject, NodeOperationError } from 'n8n-workflow
 import { AuthContext, makeRequest } from '../transport/request';
 import { parseJsonParam } from '../helpers/parse';
 import { looksLikeMutatingCommand } from '../helpers/mutation';
+import { requireConfirmed } from '../helpers/guard';
 
 export async function execute(
 	this: IExecuteFunctions,
@@ -22,14 +23,12 @@ export async function execute(
 
 		if (looksLikeMutatingCommand(command)) {
 			const confirm = this.getNodeParameter('confirm', i, false) as boolean;
-			if (!confirm) {
-				throw new NodeOperationError(
-					this.getNode(),
-					`"${command}" looks like it mutates account state. Set confirm=true to run it ` +
-						'(or dryRun=true to preview the request).',
-					{ itemIndex: i },
-				);
-			}
+			requireConfirmed(
+				this.getNode(),
+				i,
+				confirm,
+				`run the "${command}" command, which looks like it mutates account state`,
+			);
 		}
 
 		return makeRequest.call(this, command, params, auth, 'auto');

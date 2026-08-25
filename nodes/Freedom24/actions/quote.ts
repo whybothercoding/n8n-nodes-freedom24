@@ -23,7 +23,13 @@ export async function execute(
 		const simplify = this.getNodeParameter('simplify', i, true) as boolean;
 		if (!simplify) return response;
 		const quotes = extractRecordArray(response, RECORD_ARRAY_PATHS.quotes);
-		return quotes?.[0] ?? response;
+		// null means no known response shape matched at all — surface the raw envelope so nothing is
+		// silently dropped. An empty (but recognized) array means Tradernet just has no quote for
+		// this ticker — return {} rather than falling back to the raw envelope, which would break
+		// the flat shape Simplify=true promises (see sibling getMany, which distinguishes the same
+		// two cases).
+		if (quotes === null) return response;
+		return quotes[0] ?? {};
 	}
 
 	if (operation === 'getMany') {

@@ -1,7 +1,11 @@
 /* eslint-disable @n8n/community-nodes/no-restricted-imports */
 import { describe, expect, it } from 'vitest';
 
-import { JsonParamParseError, parseJsonParam } from '../../nodes/Freedom24/helpers/parse';
+import {
+	JsonParamParseError,
+	parseJsonArrayParam,
+	parseJsonParam,
+} from '../../nodes/Freedom24/helpers/parse';
 
 describe('parseJsonParam', () => {
 	it('parses valid JSON', () => {
@@ -23,5 +27,23 @@ describe('parseJsonParam', () => {
 			expect(parseError.raw).toBe('{bad');
 			expect(parseError.message).toContain('sortJson');
 		}
+	});
+});
+
+describe('parseJsonArrayParam', () => {
+	it('parses a valid JSON array', () => {
+		expect(parseJsonArrayParam('filtersJson', '[{"field":"ticker"}]')).toEqual([
+			{ field: 'ticker' },
+		]);
+	});
+
+	it('raises a JsonParamParseError on invalid JSON syntax', () => {
+		expect(() => parseJsonArrayParam('filtersJson', '{not valid')).toThrow(JsonParamParseError);
+	});
+
+	it('raises a JsonParamParseError when the parsed value is valid JSON but not an array', () => {
+		expect(() => parseJsonArrayParam('filtersJson', '{"field":"ticker"}')).toThrow(
+			JsonParamParseError,
+		);
 	});
 });

@@ -13,6 +13,7 @@ export async function execute(
 		const params = buildFxRatesPayload({
 			baseCurrency: this.getNodeParameter('baseCurrency', i) as string,
 			currencies: splitCsv(this.getNodeParameter('currencies', i) as string),
+			timezone: this.getTimezone(),
 			fxDate: this.getNodeParameter('fxDate', i, '') as string,
 		});
 		return makeRequest.call(this, 'getCrossRatesForDate', params, auth, 'auto');

@@ -23,6 +23,22 @@ describe('dynamic.call — mutation safety gate', () => {
 		expect(httpCalls).toHaveLength(0);
 	});
 
+	it('refuses a trading/account verb outside the built-in fixed commands without confirm', async () => {
+		const { ctx, httpCalls } = createFakeExecuteFunctions({
+			params: {
+				resource: 'dynamic',
+				operation: 'call',
+				command: 'sellStock',
+				parametersJson: '{}',
+				dryRun: false,
+				confirm: false,
+			},
+		});
+
+		await expect(router.call(ctx, 0, AUTH)).rejects.toThrow(/looks like it mutates/);
+		expect(httpCalls).toHaveLength(0);
+	});
+
 	it('allows a read command through with no confirm required', async () => {
 		const { ctx } = createFakeExecuteFunctions({
 			params: {

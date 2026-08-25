@@ -24,6 +24,8 @@ Live-instance verification is still required for anything a unit test can't reac
 2. Deploying to a test n8n instance (copying `dist/` and `package.json`).
 3. Running a manual trigger workflow.
 
+**Node type string when building/deploying a workflow programmatically (e.g. via n8n-mcp) against a `~/.n8n/custom`-installed instance:** it is `CUSTOM.freedom24`, **not** `n8n-nodes-freedom24.freedom24`. Verified 2026-08-25 by reading n8n's own loader source on the live instance (`n8n-core`'s `CustomDirectoryLoader` hardcodes `packageName = CUSTOM_NODES_PACKAGE_NAME` — the literal string `"CUSTOM"` — for every node loaded from the custom folder, regardless of its `package.json` name or on-disk subfolder name; the fully-qualified type registered globally is `` `${packageName}.${node.description.name}` ``, i.e. `CUSTOM.freedom24`). Using the npm-style `n8n-nodes-freedom24.freedom24` type fails workflow activation with `Unrecognized node type`, even though the package itself is loaded correctly (icon serves fine, no boot errors) — this is a distinct failure mode from a broken install, easy to misdiagnose as one. This is a property of the custom-folder loader itself, not specific to this node — applies to any node installed the same way on this instance (e.g. `n8n-nodes-beehiiv` too, despite its on-disk folder happening to match its package name).
+
 ## 2. Project Structure
 
 - `nodes/Freedom24/Freedom24.node.ts`: Node description assembly, `execute()` loop (auth setup, pairedItem, continueOnFail), `methods` (credentialTest/listSearch).
@@ -117,7 +119,7 @@ Use `helpers/guard.ts`'s `requireConfirmed()` rather than hand-rolling the check
 
 Before finalizing any changes, ensure:
 
-1. `npm run build` completes without errors.
+1. `npm run build` completes without errors. **Run `rm -rf dist .tsbuildinfo` first** if `dist/` already exists from a prior build — TypeScript's incremental cache (`.tsbuildinfo/build.tsbuildinfo`) can think nothing changed and silently emit zero `.js` files (only the static SVG/JSON assets get copied) even though `n8n-node build` still reports "✓ Build successful". Always verify with `find dist -name "*.js" | wc -l` before deploying `dist/` anywhere.
 2. `npm run lint` passes all n8n-specific rules.
 3. `npm test` passes.
 4. Version in `package.json` is appropriately incremented if releasing.

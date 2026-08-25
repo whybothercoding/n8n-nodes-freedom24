@@ -26,6 +26,22 @@
 - No output item carried `pairedItem`.
 - Both credentials shared one unauthenticated, always-passing connection test.
 - Read-only commands and `dynamic.call` 404'd against the v1 API with no fallback.
+- `dynamic.call`'s mutation-safety heuristic still under-blocked real Tradernet verbs (`buy`,
+  `sell`, `close`, `confirm`, `reject`, `withdraw`, `transfer`, `convert`, `exercise`), letting a
+  real mutation through unconfirmed.
+- `watchlist.update` fired a live API call to backfill Name/Picture before the Dry Run check —
+  `dryRun: true` still touched the network when those fields were left blank.
+- Login failure detection only checked the response body's `error` field, missing `errMsg` (both
+  are valid Tradernet failure signals); a non-JSON login response could also crash with a raw
+  `SyntaxError` instead of a clean error.
+- The session cookie regex could match inside another cookie's name ending in "SID" (e.g.
+  `PHPSESSID`), extracting the wrong session value.
+- `filtersJson`/`sortJson` that parsed as valid JSON but not an array were silently dropped
+  instead of raising a clear error.
+- `history.getTrades`/`fx.getRates` date parameters were truncated to a calendar date using a
+  naive UTC split, ignoring the workflow's configured timezone — could be off by a day.
+- `quote.get` with Simplify on returned the entire raw API envelope instead of an empty result
+  when a ticker had no matching quote record.
 
 ### Added
 - Ticker is now a searchable `resourceLocator` (raw string entry stays the default).

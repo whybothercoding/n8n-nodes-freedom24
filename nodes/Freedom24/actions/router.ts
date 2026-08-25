@@ -1,8 +1,7 @@
-import { IExecuteFunctions, IDataObject, NodeOperationError } from 'n8n-workflow';
+import { IExecuteFunctions, IDataObject, JsonObject, NodeApiError, NodeOperationError } from 'n8n-workflow';
 
 import { AuthContext } from '../transport/request';
 import { PayloadValidationError } from '../helpers/payloads';
-import { JsonParamParseError } from '../helpers/parse';
 
 import * as portfolio from './portfolio';
 import * as quote from './quote';
@@ -31,10 +30,17 @@ const RESOURCE_HANDLERS: Record<string, ResourceHandler> = {
 };
 
 /**
- * Single dispatch point for every resource, and the one place that translates the pure helpers'
- * domain errors (PayloadValidationError, JsonParamParseError) into a proper NodeOperationError
- * carrying itemIndex. Pure builders can't build that error themselves — they never touch
+ * Single dispatch point for every resource, and the one place that translates the pure payload
+ * builders' domain error (PayloadValidationError) into a proper NodeOperationError carrying
+ * itemIndex. Pure builders can't build that error themselves — they never touch
  * IExecuteFunctions — so this is where that seam gets closed.
+ *
+ * Anything else escaping a handler should already be a NodeApiError (from makeRequest) or a
+ * NodeOperationError (from a confirm-gate, an unmatched operation, or a parameter-parsing
+ * failure) — constructing a fresh NodeApiError around it is a no-op passthrough for the
+ * NodeApiError case (its constructor returns an already-NodeApiError argument unchanged) and a
+ * message/description-preserving rewrap for everything else, which is what
+ * `@n8n/community-nodes/require-node-api-error` expects instead of a bare rethrow.
  */
 export async function router(
 	this: IExecuteFunctions,
@@ -54,9 +60,9 @@ export async function router(
 	try {
 		return await handler.call(this, i, operation, auth);
 	} catch (error) {
-		if (error instanceof PayloadValidationError || error instanceof JsonParamParseError) {
+		if (error instanceof PayloadValidationError) {
 			throw new NodeOperationError(this.getNode(), error.message, { itemIndex: i });
 		}
-		throw error;
+		throw new NodeApiError(this.getNode(), error as JsonObject, { itemIndex: i });
 	}
 }

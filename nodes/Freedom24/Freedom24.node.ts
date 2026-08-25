@@ -3,6 +3,8 @@ import {
 	INodeExecutionData,
 	INodeType,
 	INodeTypeDescription,
+	JsonObject,
+	NodeApiError,
 	NodeConnectionTypes,
 } from 'n8n-workflow';
 
@@ -81,7 +83,7 @@ export class Freedom24 implements INodeType {
 				const message = (error as Error).message;
 				return [items.map((_item, i) => ({ json: { error: message }, pairedItem: { item: i } }))];
 			}
-			throw error;
+			throw new NodeApiError(this.getNode(), error as JsonObject);
 		}
 
 		for (let i = 0; i < items.length; i++) {
@@ -97,7 +99,7 @@ export class Freedom24 implements INodeType {
 					returnData.push({ json: { error: (error as Error).message }, pairedItem: { item: i } });
 					continue;
 				}
-				throw error;
+				throw new NodeApiError(this.getNode(), error as JsonObject, { itemIndex: i });
 			}
 		}
 

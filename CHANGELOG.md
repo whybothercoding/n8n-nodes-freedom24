@@ -1,5 +1,58 @@
 # Changelog
 
+## [0.2.3] - 2026-08-25
+
+No functional changes. Republished via the GitHub Actions workflow so this version carries an npm
+provenance attestation — required for n8n Creator Portal verification submission, which the manual
+bootstrap publish (0.2.2, needed to create the new scoped package identity before trusted
+publishing could be configured for it) can never satisfy since provenance can only be generated
+inside GitHub Actions' OIDC environment.
+
+## [0.2.2] - 2026-08-25
+
+Renamed the published package from `n8n-nodes-freedom24` to `@indiegoweb/n8n-nodes-freedom24`
+(scoped, matching `@indiegoweb/n8n-nodes-beehiiv`). No functional changes to the node itself.
+The unscoped `n8n-nodes-freedom24` package on npm is deprecated in favor of this one — npm has no
+package rename, so this is a new package identity, not an update to the old one. If installed via
+n8n's Community Nodes UI/API (not the `~/.n8n/custom` dev-loader path — that always registers as
+`CUSTOM.freedom24` regardless of package name), the old install must be removed and reinstalled
+under the new scoped name; the node's type string changes from `n8n-nodes-freedom24.freedom24` to
+`@indiegoweb/n8n-nodes-freedom24.freedom24` accordingly.
+
+Also addresses n8n Creator Portal review findings from the original (unscoped) submission, verified
+against a fresh `npx @n8n/scan-community-package` run and the portal's own ESLint config
+(`@n8n/eslint-plugin-community-nodes`), which are stricter than this repo's own `npm run lint`:
+
+### Fixed
+- `require-node-api-error`: every catch-all error rethrow (`Freedom24.node.ts` x2, `router.ts`)
+  now goes through `NodeApiError` instead of a bare `throw error` — a no-op passthrough for an
+  already-`NodeApiError` (its constructor returns that exact instance unchanged), and a
+  message/description-preserving rewrap for anything else, instead of losing HTTP context.
+- `helpers/parse.ts`'s `JsonParamParseError` domain-error class is gone; `parseJsonParam`/
+  `parseJsonArrayParam` now take `(node, itemIndex, ...)` and throw `NodeOperationError` directly,
+  from outside the `catch` block that wraps `JSON.parse` (the portal's linter flags any non-
+  `NodeApiError`/`NodeOperationError` thrown from inside a catch clause, even a domain error meant
+  to be translated by a caller). `router.ts` no longer needs to translate this error type.
+- `valid-peer-dependencies`: `peerDependencies.n8n-workflow` corrected from `">=2.1.0"` to `"*"`,
+  per the portal's current requirement.
+
+### Known, not fixed
+- `no-deprecated-workflow-functions` still flags `this.helpers.request` (deprecated) in
+  `methods/credentialTest.ts`. Confirmed via `n8n-core`'s own `CredentialTestContext` source
+  (checked against the latest published `n8n-core@2.16.1`) that `ICredentialTestFunctions.helpers`
+  genuinely has no `httpRequest` — `request` is the only HTTP method available in a `testedBy`
+  credential-test function, in any current n8n version. Switching to a declarative `test:` block
+  would avoid the deprecated call, but Tradernet returns HTTP 200 even on failed auth (the error
+  lives in the JSON body, or in a missing `Set-Cookie` header for User Login) and n8n's declarative
+  `ICredentialTestRequest.rules` can only match a status code or a body key/value — it can't express
+  either check reliably, which is exactly the "always passes" bug 0.2.0 fixed by moving to real
+  `testedBy` functions in the first place. Left as-is; flagged for the portal reviewer as a platform
+  limitation rather than worked around.
+- "Missing credential test" from the original submission looks stale: both credentials are already
+  wired to real `testedBy` functions, and a fresh scan of the current source tree does not raise
+  `credential-test-required` (it explicitly accepts `testedBy` as an alternative to a declarative
+  `test:` property).
+
 ## [0.2.1] - 2026-08-25
 
 No functional changes. Republished via the new GitHub Actions workflow so this version carries an

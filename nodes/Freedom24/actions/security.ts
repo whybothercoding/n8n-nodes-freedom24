@@ -18,10 +18,14 @@ export async function execute(
 
 	if (operation === 'getAll') {
 		const filters = parseJsonArrayParam(
+			this.getNode(),
+			i,
 			'filtersJson',
 			this.getNodeParameter('filtersJson', i, '[]') as string,
 		);
 		const sort = parseJsonArrayParam(
+			this.getNode(),
+			i,
 			'sortJson',
 			this.getNodeParameter('sortJson', i, '[]') as string,
 		);

@@ -14,6 +14,8 @@ export async function execute(
 	if (operation === 'call') {
 		const command = this.getNodeParameter('command', i) as string;
 		const params = parseJsonParam<IDataObject>(
+			this.getNode(),
+			i,
 			'parametersJson',
 			this.getNodeParameter('parametersJson', i, '{}') as string,
 		);

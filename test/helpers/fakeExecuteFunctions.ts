@@ -63,7 +63,7 @@ export function createFakeExecuteFunctions(
 			return {
 				id: '1',
 				name: 'Freedom24',
-				type: 'n8n-nodes-freedom24.freedom24',
+				type: '@indiegoweb/n8n-nodes-freedom24.freedom24',
 				typeVersion: 1,
 				position: [0, 0],
 				parameters: {},

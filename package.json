@@ -1,6 +1,6 @@
 {
-	"name": "n8n-nodes-freedom24",
-	"version": "0.2.1",
+	"name": "@indiegoweb/n8n-nodes-freedom24",
+	"version": "0.2.3",
 	"description": "n8n node for Freedom24/Tradernet Trading API",
 	"license": "MIT",
 	"homepage": "https://indiegoweb.com",
@@ -14,6 +14,9 @@
 	"repository": {
 		"type": "git",
 		"url": "https://github.com/whybothercoding/n8n-nodes-freedom24.git"
+	},
+	"publishConfig": {
+		"access": "public"
 	},
 	"engines": {
 		"node": ">=20.0.0"
@@ -57,6 +60,6 @@
 		"vitest": "^4.1.11"
 	},
 	"peerDependencies": {
-		"n8n-workflow": ">=2.1.0"
+		"n8n-workflow": "*"
 	}
 }

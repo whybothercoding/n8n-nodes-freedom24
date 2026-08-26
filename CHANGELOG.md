@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.2.4] - 2026-08-26
+
+Converts `Freedom24Api` (API Key) credential testing from a custom `testedBy` function to a
+declarative `test:` + function-based `authenticate` on `Freedom24Api.credentials.ts`, reusing the
+existing `signPayload`/`buildApiKeyHeaders` helpers unchanged — no change to how the node signs
+real requests at runtime, only to how the credential's own "Test" probe is wired.
+
+This was verified against the live Tradernet API 2026-08-26, not assumed: a bad public key and a
+bad signature both come back as a real HTTP 403 with `{"error": "..."}`, not Tradernet's usual
+"200 with the failure in the body" shape — so the declarative test's default non-2xx check is a
+genuine credential check, not a weaker one. `Freedom24UserApi` (User Login) was checked the same
+way and is **not** converted: a deliberately wrong login/password still comes back HTTP 200 with
+`{"error": "Incorrect email or password"}` and a session cookie is issued either way, so only body
+inspection catches it, and n8n's declarative `ICredentialTestRequest.rules` can only match a status
+code or an exact body key/value — it stays on `methods.credentialTest.freedom24UserApiCredentialTest`
+with `this.helpers.request`, the one remaining `no-deprecated-workflow-functions` finding from the
+portal's scan (see 0.2.2's note — confirmed to have no non-deprecated alternative in this n8n
+version).
+
 ## [0.2.3] - 2026-08-25
 
 No functional changes. Republished via the GitHub Actions workflow so this version carries an npm

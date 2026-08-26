@@ -1,58 +1,21 @@
 import { ICredentialsDecrypted, ICredentialTestFunctions, INodeCredentialTestResult } from 'n8n-workflow';
 
-import { buildApiKeyHeaders } from '../transport/signing';
 import { parseBody } from '../transport/request';
 import { getApiError } from '../helpers/responses';
 
 const BASE_URL = 'https://tradernet.com/api';
 
 /**
- * Both credential types previously "tested" themselves by hitting an unauthenticated public
- * endpoint — it passed with any garbage input. These perform an actual signed/authenticated
- * probe and fail correctly on bad credentials.
+ * Freedom24Api's credential test is declarative now (see Freedom24Api.credentials.ts's `test` +
+ * `authenticate`) — Tradernet returns a real HTTP 403 for a bad API key/signature, so the
+ * default non-2xx check is a genuine test with no need for this file's custom probe.
+ *
+ * User Login can't do the same: Tradernet returns HTTP 200 even for a wrong login/password, with
+ * a session cookie issued either way — verified against the live API 2026-08-26. The only
+ * reliable failure signal is the `error` key in the response body, which a declarative
+ * `ICredentialTestRequest`'s `rules` can't express (it only matches a status code or an exact
+ * body key/value against a known-good shape). This one stays a real signed/authenticated probe.
  */
-export async function freedom24ApiCredentialTest(
-	this: ICredentialTestFunctions,
-	credential: ICredentialsDecrypted,
-): Promise<INodeCredentialTestResult> {
-	const publicKey = credential.data?.publicKey as string | undefined;
-	const privateKey = credential.data?.privateKey as string | undefined;
-	if (!publicKey || !privateKey) {
-		return { status: 'Error', message: 'Public Key and Private Key are both required' };
-	}
-
-	const payload = JSON.stringify({});
-	const timestamp = Math.floor(Date.now() / 1000);
-	const headers = buildApiKeyHeaders(publicKey, privateKey, payload, timestamp);
-
-	try {
-		// ICredentialTestFunctions.helpers only ever exposes the deprecated `request` — there is no
-		// `httpRequest` on this particular context to switch to.
-		// eslint-disable-next-line @n8n/community-nodes/no-deprecated-workflow-functions
-		const response = (await this.helpers.request({
-			method: 'POST',
-			uri: `${BASE_URL}/getOPQ`,
-			body: payload,
-			headers,
-			resolveWithFullResponse: true,
-			simple: false,
-		})) as { statusCode: number; body: unknown };
-
-		const body = parseBody(response.body);
-		const apiError = getApiError(body);
-
-		if (response.statusCode !== 200 || apiError) {
-			return {
-				status: 'Error',
-				message: apiError ?? `Freedom24 returned HTTP ${response.statusCode}`,
-			};
-		}
-		return { status: 'OK', message: 'Connection verified' };
-	} catch (error) {
-		return { status: 'Error', message: (error as Error).message };
-	}
-}
-
 export async function freedom24UserApiCredentialTest(
 	this: ICredentialTestFunctions,
 	credential: ICredentialsDecrypted,

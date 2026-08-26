@@ -33,7 +33,6 @@ export class Freedom24 implements INodeType {
 			{
 				name: 'freedom24Api',
 				required: true,
-				testedBy: 'freedom24ApiCredentialTest',
 				displayOptions: {
 					show: { authentication: ['apiKey'] },
 				},

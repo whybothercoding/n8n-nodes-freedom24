@@ -16,16 +16,20 @@ describe('Freedom24 node description', () => {
 
 	it('registers credentialTest and listSearch methods', () => {
 		const node = new Freedom24();
-		expect(Object.keys(node.methods.credentialTest)).toContain('freedom24ApiCredentialTest');
 		expect(Object.keys(node.methods.credentialTest)).toContain('freedom24UserApiCredentialTest');
 		expect(Object.keys(node.methods.listSearch)).toContain('searchTickers');
 	});
 
-	it('both credentials are wired to a testedBy method, not a bare declarative test', () => {
+	it('User Login is wired to a testedBy method, since Tradernet returns HTTP 200 even on bad login/password', () => {
 		const node = new Freedom24();
-		for (const credential of node.description.credentials ?? []) {
-			expect(credential.testedBy).toBeTruthy();
-		}
+		const userApiCredential = node.description.credentials?.find((c) => c.name === 'freedom24UserApi');
+		expect(userApiCredential?.testedBy).toBe('freedom24UserApiCredentialTest');
+	});
+
+	it('API Key is not wired to a testedBy method — it uses the declarative test on Freedom24Api.credentials.ts', () => {
+		const node = new Freedom24();
+		const apiKeyCredential = node.description.credentials?.find((c) => c.name === 'freedom24Api');
+		expect(apiKeyCredential?.testedBy).toBeUndefined();
 	});
 });
 

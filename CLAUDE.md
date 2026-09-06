@@ -128,3 +128,29 @@ Before finalizing any changes, ensure:
 3. `npm test` passes.
 4. Version in `package.json` is appropriately incremented if releasing.
 5. Static files (SVG icons, JSON schemas) are correctly copied to `dist/`.
+
+## 8. Open todos
+
+- [ ] **`dist/package.json` is stale at 0.2.3 while source `package.json` is
+  0.2.4.** Since `files: ["dist"]` ships that whole directory, a publish
+  without a fresh build ships a `dist/package.json` whose version disagrees
+  with the published one. Fix with a clean rebuild (`rm -rf dist .tsbuildinfo
+  && npm run build` — see §7's incremental-cache warning) before the next
+  release. Found 2026-09-06, deliberately left untouched as out of scope then.
+- [ ] **Workflow changes are committed but have never actually run.**
+  `.github/workflows/publish.yml` (2026-09-06): `npm install -g npm@latest` →
+  `npm@12.0.2` plus a `npm config set strict-allow-scripts true` step before
+  `npm ci`. `.github/workflows/ci.yml` (2026-09-06): matrix `[20.x, 22.x]` →
+  `[22.x, 24.x]` (Node 20 hit upstream EOL 30 Apr 2026; 24 matches what
+  `publish.yml` already runs and n8n's own supported ceiling), and
+  `actions/setup-node@v4` → `@v6` to match `publish.yml`. Neither has been
+  exercised by a real Actions run — push a branch and watch it, and **do not
+  validate by cutting a real release**.
+- [ ] **Don't tighten `engines.node`.** It is deliberately `>=20.0.0`, a
+  permissive floor, not an oversight. This package's real runtime is whatever
+  Node major the live self-hosted `n8nio/n8n` Docker image bundles — not
+  something this repo controls or can verify. n8n supports Node 20.19–24.x and
+  explicitly **not** 25 (odd/Current releases break `isolated-vm`'s native
+  ABI). Pinning this to `24.x` would assert a guarantee the package can't
+  keep. Recorded as a tracked variant in
+  `indiegoweb-global/systems/npm-dependency-policy/variants.yaml`.

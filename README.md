@@ -1,6 +1,8 @@
 # n8n-nodes-freedom24
 
 [![CI](https://github.com/whybothercoding/n8n-nodes-freedom24/actions/workflows/ci.yml/badge.svg)](https://github.com/whybothercoding/n8n-nodes-freedom24/actions/workflows/ci.yml)
+[![npm version](https://img.shields.io/npm/v/n8n-nodes-freedom24.svg)](https://www.npmjs.com/package/n8n-nodes-freedom24)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE.md)
 
 This is an n8n community node. It lets you use the Freedom24 (Tradernet) API in your n8n workflows.
 

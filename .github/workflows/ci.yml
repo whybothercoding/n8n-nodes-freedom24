@@ -37,10 +37,27 @@ jobs:
       # systems/npm-dependency-policy rules 2+3 — pin an exact npm version and
       # make an unapproved install script a hard CI failure instead of npm
       # 12's silent skip. Missing entirely until 2026-09-09 (systems/github-ci).
-      - name: Pin npm version
+      #
+      # Split per-leg (fixed 2026-09-10): npm@12.0.2 requires Node
+      # >=22.22.2, incompatible with this matrix's own 20.x leg (added to
+      # test engines.node's declared floor) — that leg failed EBADENGINE
+      # before lint/typecheck/build/test ever ran, so it had zero real CI
+      # coverage since the pin was added. No npm>=12 supports Node 20, so
+      # the 20.x leg pins the exact npm version Node 20.x's setup-node
+      # actually resolves (10.8.2) instead of an implicit "whatever's
+      # bundled", and skips allowScripts enforcement (npm <12 has no such
+      # gate to enforce). See systems/npm-dependency-policy/reference/
+      # ci-npm-pin-snippet.yml for the canonical pattern.
+      - name: Pin npm version (Node >=22)
+        if: ${{ matrix.node-version != '20.x' }}
         run: npm install -g npm@12.0.2
 
-      - name: Enforce allowScripts in CI
+      - name: Pin npm version (Node 20.x)
+        if: ${{ matrix.node-version == '20.x' }}
+        run: npm install -g npm@10.8.2
+
+      - name: Enforce allowScripts in CI (Node >=22 only)
+        if: ${{ matrix.node-version != '20.x' }}
         run: npm config set strict-allow-scripts true
 
       - name: Install dependencies

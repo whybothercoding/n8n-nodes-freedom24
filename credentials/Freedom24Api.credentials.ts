@@ -14,7 +14,7 @@ export class Freedom24Api implements ICredentialType {
 	name = 'freedom24Api';
 	displayName = 'Freedom24 API';
 	documentationUrl = 'https://tradernet.com/api';
-	icon = 'file:freedom24.svg' as const;
+	icon = { light: 'file:freedom24.light.svg', dark: 'file:freedom24.dark.svg' } as const;
 
 	// HMAC-signs every request with these credentials (reusing the same pure signPayload/
 	// buildApiKeyHeaders the node's real API calls use — see transport/signing.ts), which is what

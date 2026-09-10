@@ -18,7 +18,7 @@ export class Freedom24 implements INodeType {
 	description: INodeTypeDescription = {
 		displayName: 'Freedom24',
 		name: 'freedom24',
-		icon: 'file:freedom24.svg',
+		icon: { light: 'file:freedom24.light.svg', dark: 'file:freedom24.dark.svg' },
 		group: ['transform'],
 		version: 1,
 		description: 'Interact with Freedom24 / Tradernet API',

@@ -1,4 +1,4 @@
-/* eslint-disable @n8n/community-nodes/no-restricted-imports */
+ 
 import * as crypto from 'crypto';
 import { describe, expect, it } from 'vitest';
 

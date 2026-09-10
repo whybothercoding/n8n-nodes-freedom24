@@ -1,4 +1,4 @@
-/* eslint-disable @n8n/community-nodes/no-restricted-imports */
+ 
 import { describe, expect, it } from 'vitest';
 
 import { resolveTickerParam } from '../../nodes/Freedom24/helpers/ticker';

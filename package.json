@@ -52,11 +52,11 @@
 		"@n8n/node-cli": "*",
 		"@types/node": "^26.5.0",
 		"@vitest/coverage-v8": "^5.0.0",
-		"eslint": "9.39.5",
+		"eslint": "10.10.0",
 		"n8n-workflow": "^2.1.0",
 		"prettier": "3.9.6",
 		"release-it": "^21.0.2",
-		"typescript": "5.9.3",
+		"typescript": "7.0.2",
 		"vitest": "^5.0.0"
 	},
 	"peerDependencies": {

@@ -60,8 +60,22 @@ jobs:
         if: ${{ matrix.node-version != '20.x' }}
         run: npm config set strict-allow-scripts true
 
-      - name: Install dependencies
+      - name: Install dependencies (Node >=22)
+        if: ${{ matrix.node-version != '20.x' }}
         run: npm ci
+
+      # No allowScripts gate exists on this leg's npm (see above) — running
+      # plain `npm ci` here would execute every install script unconditionally
+      # with no allowlist check at all, a real regression versus the >=22 leg
+      # (found by an automated commit review 2026-09-10, same day as the
+      # split-per-leg fix). --ignore-scripts makes this leg strictly SAFER
+      # than either prior state (nothing runs), not a rollback of the
+      # EBADENGINE fix above — this leg exists to test floor code
+      # compatibility (lint/typecheck/build/test), not install-script
+      # behavior, so no scripts running here costs nothing it needs.
+      - name: Install dependencies (Node 20.x — no scripts, no allowScripts gate on this npm)
+        if: ${{ matrix.node-version == '20.x' }}
+        run: npm ci --ignore-scripts
 
       - name: Lint
         run: npm run lint

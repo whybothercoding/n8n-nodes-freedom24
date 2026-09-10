@@ -3,8 +3,8 @@ import { IDataObject, IHttpRequestOptions, INode, NodeApiError, JsonObject } fro
 import { buildApiKeyHeaders } from './signing';
 import { getApiError, isCommandNotFound } from '../helpers/responses';
 
-const BASE_URL = 'https://tradernet.com/api';
-const V2_BASE_URL = 'https://tradernet.com/api/v2';
+const BASE_URL = 'https://freedom24.com/api';
+const V2_BASE_URL = 'https://freedom24.com/api/v2';
 
 interface FullHttpResponse {
 	statusCode: number;

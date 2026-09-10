@@ -43,9 +43,9 @@ export async function execute(
 
 	if (operation === 'cancel') {
 		const params: IDataObject = { order_id: this.getNodeParameter('orderId', i) as string };
-		if (dryRun) return { dryRun: true, command: 'deleteOrder', params };
+		if (dryRun) return { dryRun: true, command: 'delTradeOrder', params };
 		requireConfirmed(this.getNode(), i, confirm, 'cancel an order');
-		return makeRequest.call(this, 'deleteOrder', params, auth, 'fixedV1');
+		return makeRequest.call(this, 'delTradeOrder', params, auth, 'fixedV1');
 	}
 
 	if (operation === 'bulkCancel') {
@@ -53,7 +53,7 @@ export async function execute(
 		if (dryRun) {
 			return ids.map((orderId) => ({
 				dryRun: true,
-				command: 'deleteOrder',
+				command: 'delTradeOrder',
 				params: { order_id: orderId },
 			}));
 		}
@@ -61,7 +61,7 @@ export async function execute(
 
 		// Settled independently — one failing cancel must not hide the outcome of the others.
 		const settled = await Promise.allSettled(
-			ids.map((orderId) => makeRequest.call(this, 'deleteOrder', { order_id: orderId }, auth, 'fixedV1')),
+			ids.map((orderId) => makeRequest.call(this, 'delTradeOrder', { order_id: orderId }, auth, 'fixedV1')),
 		);
 		return settled.map((outcome, index) =>
 			outcome.status === 'fulfilled'

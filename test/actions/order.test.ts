@@ -104,7 +104,7 @@ describe('order.place', () => {
 
 		expect(result).toEqual({ order_id: '999' });
 		expect(httpCalls).toHaveLength(1);
-		expect(httpCalls[0].url).toBe('https://tradernet.com/api/v2/cmd/putOrderV2');
+		expect(httpCalls[0].url).toBe('https://freedom24.com/api/v2/cmd/putOrderV2');
 	});
 });
 

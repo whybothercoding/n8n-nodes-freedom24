@@ -36,7 +36,7 @@ describe('makeRequest — fixedV2/fixedV1 (the two proven trading mutations)', (
 		).rejects.toThrow(/rejected "putOrderV2"/);
 
 		expect(httpCalls).toHaveLength(1);
-		expect(httpCalls[0].url).toBe('https://tradernet.com/api/v2/cmd/putOrderV2');
+		expect(httpCalls[0].url).toBe('https://freedom24.com/api/v2/cmd/putOrderV2');
 	});
 
 	it('fixedV1 hits the plain v1 endpoint and never falls back', async () => {
@@ -46,11 +46,11 @@ describe('makeRequest — fixedV2/fixedV1 (the two proven trading mutations)', (
 		});
 
 		await expect(
-			makeRequest.call(ctx, 'deleteOrder', { order_id: '1' }, API_KEY_AUTH, 'fixedV1'),
+			makeRequest.call(ctx, 'delTradeOrder', { order_id: '1' }, API_KEY_AUTH, 'fixedV1'),
 		).rejects.toThrow(/HTTP 404/);
 
 		expect(httpCalls).toHaveLength(1);
-		expect(httpCalls[0].url).toBe('https://tradernet.com/api/deleteOrder');
+		expect(httpCalls[0].url).toBe('https://freedom24.com/api/delTradeOrder');
 	});
 });
 
@@ -70,9 +70,9 @@ describe('makeRequest — auto strategy fallback', () => {
 
 		expect(result).toEqual({ result: 'fallback worked' });
 		expect(httpCalls).toHaveLength(2);
-		expect(httpCalls[0].url).toBe('https://tradernet.com/api/someReadCommand');
+		expect(httpCalls[0].url).toBe('https://freedom24.com/api/someReadCommand');
 		// Second call is the wrapped query form: base URL + qs.q
-		expect(httpCalls[1].url).toBe('https://tradernet.com/api');
+		expect(httpCalls[1].url).toBe('https://freedom24.com/api');
 		expect(httpCalls[1].qs).toBeDefined();
 	});
 
@@ -83,7 +83,7 @@ describe('makeRequest — auto strategy fallback', () => {
 			httpRequest: async (opts) => {
 				seenUrls.push(opts.url);
 				if (opts.url.includes('/v2/cmd/')) return { statusCode: 404, body: '{}' };
-				if (opts.url === 'https://tradernet.com/api/putSomethingUnknown') {
+				if (opts.url === 'https://freedom24.com/api/putSomethingUnknown') {
 					return { statusCode: 404, body: '{}' };
 				}
 				return ok({ ok: true });
@@ -95,7 +95,7 @@ describe('makeRequest — auto strategy fallback', () => {
 		expect(result).toEqual({ ok: true });
 		expect(httpCalls).toHaveLength(3);
 		expect(seenUrls[0]).toContain('/v2/cmd/putSomethingUnknown');
-		expect(seenUrls[1]).toBe('https://tradernet.com/api/putSomethingUnknown');
+		expect(seenUrls[1]).toBe('https://freedom24.com/api/putSomethingUnknown');
 	});
 
 	it('does NOT fall back on a 500 (only 404/"Command not found" trigger fallback)', async () => {
@@ -169,7 +169,7 @@ describe('makeRequest — session (User Login) auth', () => {
 		await makeRequest.call(ctx, 'getOPQ', { a: 1 }, SESSION_AUTH, 'auto');
 
 		expect(httpCalls).toHaveLength(1);
-		expect(httpCalls[0].url).toBe('https://tradernet.com/api');
+		expect(httpCalls[0].url).toBe('https://freedom24.com/api');
 		const q = JSON.parse((httpCalls[0].qs as Record<string, string>).q);
 		expect(q).toEqual({ cmd: 'getOPQ', params: { a: 1 }, SID: 'sid-123' });
 	});

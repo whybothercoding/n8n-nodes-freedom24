@@ -16,7 +16,7 @@ describe('Freedom24Api.authenticate', () => {
 		const credential = new Freedom24Api();
 		const result = await credential.authenticate(
 			{ publicKey: 'pub-key', privateKey: 'priv-key' },
-			{ method: 'POST', url: 'https://tradernet.com/api/getOPQ', body: {} },
+			{ method: 'POST', url: 'https://freedom24.com/api/getOPQ', body: {} },
 		);
 
 		expect(result.body).toBe('{}');
@@ -29,7 +29,7 @@ describe('Freedom24Api.authenticate', () => {
 		const credential = new Freedom24Api();
 		const result = await credential.authenticate(
 			{ publicKey: 'pub-key', privateKey: 'priv-key' },
-			{ method: 'POST', url: 'https://tradernet.com/api/getOPQ', body: '{"a":1}' },
+			{ method: 'POST', url: 'https://freedom24.com/api/getOPQ', body: '{"a":1}' },
 		);
 
 		expect(result.body).toBe('{"a":1}');
@@ -43,7 +43,7 @@ describe('Freedom24Api.authenticate', () => {
 			{ publicKey: 'pub-key', privateKey: 'priv-key' },
 			{
 				method: 'POST',
-				url: 'https://tradernet.com/api/getOPQ',
+				url: 'https://freedom24.com/api/getOPQ',
 				body: {},
 				headers: { 'X-Custom-Header': 'keep-me' },
 			},
@@ -57,7 +57,7 @@ describe('Freedom24Api.test', () => {
 	it('probes the real getOPQ endpoint with an empty JSON body', () => {
 		const credential = new Freedom24Api();
 		expect(credential.test.request).toMatchObject({
-			baseURL: 'https://tradernet.com/api',
+			baseURL: 'https://freedom24.com/api',
 			url: '/getOPQ',
 			method: 'POST',
 			body: {},

@@ -37,8 +37,8 @@ describe('watchlist.update', () => {
 		await router.call(ctx, 0, AUTH);
 
 		expect(calls).toEqual([
-			'https://tradernet.com/api/getUserStockLists',
-			'https://tradernet.com/api/updateStockList',
+			'https://freedom24.com/api/getUserStockLists',
+			'https://freedom24.com/api/updateStockList',
 		]);
 	});
 
@@ -63,7 +63,7 @@ describe('watchlist.update', () => {
 
 		await router.call(ctx, 0, AUTH);
 
-		expect(calls).toEqual(['https://tradernet.com/api/updateStockList']);
+		expect(calls).toEqual(['https://freedom24.com/api/updateStockList']);
 	});
 
 	it('a dry run never calls the network, even when name/picture are left blank', async () => {

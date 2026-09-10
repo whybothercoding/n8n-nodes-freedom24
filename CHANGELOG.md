@@ -1,5 +1,27 @@
 # Changelog
 
+## [0.2.5] - 2026-09-10
+
+Fixes two request-routing defects found while migrating IndieGoWeb's live trading workflows
+(`investing-private`) off hand-rolled HMAC signing onto this node's `Freedom24Api` credential —
+until now this package had never actually been wired into a workflow, only installed for its
+credential type.
+
+1. **Wrong host for every request.** `transport/request.ts` (and the credential's own `test`
+   probe) hardcoded `tradernet.com`. Every proven-live call in `investing-private`'s production
+   system — reads and writes alike — has always gone through `freedom24.com/api/{command}`; reads
+   happen to work on either host, but the write path was unverified. `BASE_URL`/`V2_BASE_URL` now
+   point at `freedom24.com`. `transport/session.ts` and `methods/credentialTest.ts` (both User
+   Login-only, unrelated to the API Key HMAC path) are deliberately left on `tradernet.com` —
+   no live evidence either way for that cookie-session endpoint.
+2. **Wrong command name for cancel.** `actions/order.ts`'s `cancel`/`bulkCancel` sent
+   `deleteOrder`, which isn't a real Tradernet command — confirmed against Tradernet's own API
+   reference ("Cancel Order" section: *"The method command delTradeOrder"*). Now sends
+   `delTradeOrder`, matching what `investing-private`'s own T10 workflow has always used.
+
+Both were also wrong in the offline test suite's own assertions (which is how they went
+unnoticed — the suite never makes a network call). Updated alongside the fix; all 121 tests pass.
+
 ## [0.2.4] - 2026-08-26
 
 Converts `Freedom24Api` (API Key) credential testing from a custom `testedBy` function to a

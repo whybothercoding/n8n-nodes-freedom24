@@ -31,7 +31,7 @@ describe('order.place', () => {
 		expect(httpCalls).toHaveLength(0);
 		expect(result).toMatchObject({
 			dryRun: true,
-			command: 'putOrderV2',
+			command: 'putTradeOrder',
 			params: { instr_name: 'AAPL.US', action_id: 1, order_type_id: 1, qty: 5 },
 		});
 	});
@@ -81,7 +81,7 @@ describe('order.place', () => {
 		expect(httpCalls).toHaveLength(0);
 	});
 
-	it('confirmed places the order via the fixed v2 endpoint', async () => {
+	it('confirmed places the order via the plain endpoint (fixedV2 has no working v2 shape)', async () => {
 		const { ctx, httpCalls } = createFakeExecuteFunctions({
 			params: {
 				resource: 'order',
@@ -104,7 +104,7 @@ describe('order.place', () => {
 
 		expect(result).toEqual({ order_id: '999' });
 		expect(httpCalls).toHaveLength(1);
-		expect(httpCalls[0].url).toBe('https://freedom24.com/api/v2/cmd/putOrderV2');
+		expect(httpCalls[0].url).toBe('https://freedom24.com/api/putTradeOrder');
 	});
 });
 

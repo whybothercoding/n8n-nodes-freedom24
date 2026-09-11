@@ -36,9 +36,9 @@ export async function execute(
 			expirationId: this.getNodeParameter('expirationId', i) as number,
 		});
 
-		if (dryRun) return { dryRun: true, command: 'putOrderV2', params };
+		if (dryRun) return { dryRun: true, command: 'putTradeOrder', params };
 		requireConfirmed(this.getNode(), i, confirm, 'place a live order');
-		return makeRequest.call(this, 'putOrderV2', params, auth, 'fixedV2');
+		return makeRequest.call(this, 'putTradeOrder', params, auth, 'fixedV2');
 	}
 
 	if (operation === 'cancel') {

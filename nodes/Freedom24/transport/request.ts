@@ -4,7 +4,6 @@ import { buildApiKeyHeaders } from './signing';
 import { getApiError, isCommandNotFound } from '../helpers/responses';
 
 const BASE_URL = 'https://freedom24.com/api';
-const V2_BASE_URL = 'https://freedom24.com/api/v2';
 
 interface FullHttpResponse {
 	statusCode: number;
@@ -27,21 +26,18 @@ export type AuthContext =
 	| { type: 'userLogin'; sid: string };
 
 /**
- * How a command is routed. 'fixedV2'/'fixedV1' preserve exactly the endpoint each mutating
- * operation always used — no fallback, because silently retrying a trading mutation on a
- * different endpoint risks re-submitting it with different semantics (or twice). 'auto' is for
- * read-only commands and the `dynamic.call` escape hatch, where a fallback carries no such risk.
+ * How a command is routed. There is no working `/api/v2/cmd/{command}` shape under this header-
+ * HMAC auth scheme — confirmed live 2026-09-11 (T09 migration testing): every command through
+ * that path returns "Invalid signature provided" regardless of auth correctness, matching this
+ * repo's own prior documented finding for the sibling `investing-private` system (its CLAUDE.md
+ * flags `tradernet.com/api/v2/cmd/{command}` as a known-wrong URL for exactly this reason). Both
+ * 'fixedV2' and 'fixedV1' therefore resolve to the same plain `/api/{command}` endpoint — the
+ * strategy name is kept (rather than collapsed to one value) only so each mutating operation's
+ * call site still documents which endpoint family it always used, with no functional difference
+ * today. 'auto' is for read-only commands and the `dynamic.call` escape hatch, where a fallback
+ * to the older wrapped `q`-param form on 404 carries no re-submission risk.
  */
 export type RequestStrategy = 'fixedV2' | 'fixedV1' | 'auto';
-
-// Not the same list as helpers/mutation.ts's own MUTATING_PREFIXES — that one is the broad,
-// deliberately over-inclusive confirm-gate for dynamic.call; this one only decides whether the
-// 'auto' strategy below tries the v2 endpoint before v1 for known put/delete-style commands.
-const MUTATING_PREFIXES = ['put', 'del'];
-
-export function isMutatingCommand(command: string): boolean {
-	return MUTATING_PREFIXES.some((prefix) => command.startsWith(prefix));
-}
 
 interface RawResult {
 	statusCode: number;
@@ -84,20 +80,6 @@ async function rawRequest(
 function apiKeyHeaders(auth: Extract<AuthContext, { type: 'apiKey' }>, payload: string) {
 	const timestamp = Math.floor(Date.now() / 1000);
 	return buildApiKeyHeaders(auth.publicKey, auth.privateKey, payload, timestamp);
-}
-
-async function requestV2(
-	this: HttpContext,
-	command: string,
-	params: IDataObject,
-	auth: Extract<AuthContext, { type: 'apiKey' }>,
-): Promise<RawResult> {
-	const payload = JSON.stringify(params);
-	return rawRequest.call(this, {
-		url: `${V2_BASE_URL}/cmd/${command}`,
-		body: payload,
-		headers: apiKeyHeaders(auth, payload),
-	});
 }
 
 async function requestV1(
@@ -154,34 +136,21 @@ async function resolve(
 	auth: AuthContext,
 	strategy: RequestStrategy,
 ): Promise<RawResult> {
-	const mutating = isMutatingCommand(command);
-
 	if (auth.type === 'userLogin') {
 		// Session auth has one working request shape for every command — no v1/v2 split — so there
 		// is nothing to fall back to.
 		return requestSession.call(this, command, params, auth.sid);
 	}
 
-	if (strategy === 'fixedV2') {
-		return requestV2.call(this, command, params, auth);
-	}
-	if (strategy === 'fixedV1') {
+	if (strategy === 'fixedV2' || strategy === 'fixedV1') {
 		return requestV1.call(this, command, params, auth);
 	}
 
-	// 'auto': read-only commands and the dynamic-call escape hatch. A fallback to a different
-	// endpoint shape is only safe here because it only ever triggers on an unambiguous 404 /
-	// "Command not found" — never on a 5xx/timeout, where a mutating command may have already
+	// 'auto': read-only commands and the dynamic-call escape hatch. A fallback to the older
+	// wrapped `q`-param form is only safe here because it only ever triggers on an unambiguous
+	// 404 / "Command not found" — never on a 5xx/timeout, where a mutation may have already
 	// executed server-side.
-	let result: RawResult;
-	if (mutating) {
-		result = await requestV2.call(this, command, params, auth);
-		if (result.statusCode === 404 || isCommandNotFound(result.body)) {
-			result = await requestV1.call(this, command, params, auth);
-		}
-	} else {
-		result = await requestV1.call(this, command, params, auth);
-	}
+	let result: RawResult = await requestV1.call(this, command, params, auth);
 
 	if (result.statusCode === 404 || isCommandNotFound(result.body)) {
 		result = await requestV1Wrapped.call(this, command, params, auth);

@@ -1,5 +1,33 @@
 # Changelog
 
+## [0.2.6] - 2026-09-11
+
+Fixes the broken "v2" request path found while migrating `investing-private`'s T09
+(`update_stop`) workflow off hand-rolled HMAC signing onto this node's `Order.updateProtection`
+operation — the first live test came back `Freedom24 rejected "putStopLoss": Invalid signature
+provided` on every attempt.
+
+1. **`/api/v2/cmd/{command}` is not a working endpoint under this credential's header-HMAC auth
+   scheme.** `transport/request.ts`'s `requestV2()` posted to `${V2_BASE_URL}/cmd/${command}`
+   (`freedom24.com/api/v2/cmd/{command}`), which `investing-private`'s own CLAUDE.md already
+   documented as a known-wrong shape ("returns Invalid signature provided for all commands
+   regardless of auth format") — this package apparently never got the same fix the 0.2.5 host
+   change applied to `requestV1`. `requestV2` is removed; `RequestStrategy: 'fixedV2'` now
+   resolves through the same `${BASE_URL}/${command}` endpoint as `'fixedV1'` (kept as a distinct
+   strategy name only so each mutating operation's call site still documents which endpoint
+   family it always used — no functional difference today). `'auto'`'s mutating-command v2-first
+   attempt is removed for the same reason; it now goes straight to v1, falling back to the older
+   wrapped `q`-param form on 404 like every other command. The now-dead `isMutatingCommand`
+   helper (only ever used to gate that v2-first attempt) is removed along with its tests.
+2. **Wrong command name for place.** `actions/order.ts`'s `place` operation sent `putOrderV2`,
+   which isn't a real Tradernet command — confirmed against Tradernet's own API reference
+   ("Place Order" section: *"The method command putTradeOrder"*). Now sends `putTradeOrder`.
+
+All 119 tests pass (2 fewer than 0.2.5 — the removed `isMutatingCommand` tests; no other
+coverage lost). Live re-verification against the real (empty) Freedom24 account, on the same
+disposable `investing-private` T09 test workflow that surfaced the bug, is the next step before
+this fix is trusted in production.
+
 ## [0.2.5] - 2026-09-10
 
 Fixes two request-routing defects found while migrating IndieGoWeb's live trading workflows

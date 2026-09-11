@@ -6,8 +6,8 @@ import { looksLikeMutatingCommand } from '../../nodes/Freedom24/helpers/mutation
 describe('looksLikeMutatingCommand', () => {
 	it('flags known Tradernet mutating commands', () => {
 		for (const command of [
-			'putOrderV2',
-			'deleteOrder',
+			'putTradeOrder',
+			'delTradeOrder',
 			'addStockList',
 			'updateStockList',
 			'togglePriceAlert',
@@ -46,6 +46,6 @@ describe('looksLikeMutatingCommand', () => {
 	});
 
 	it('is case-insensitive', () => {
-		expect(looksLikeMutatingCommand('PUTORDERV2')).toBe(true);
+		expect(looksLikeMutatingCommand('PUTTRADEORDER')).toBe(true);
 	});
 });

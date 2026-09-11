@@ -1,7 +1,7 @@
  
 import { describe, expect, it } from 'vitest';
 
-import { isMutatingCommand, makeRequest } from '../../nodes/Freedom24/transport/request';
+import { makeRequest } from '../../nodes/Freedom24/transport/request';
 import type { FakeHttpResponse } from '../helpers/fakeExecuteFunctions';
 import { createFakeExecuteFunctions } from '../helpers/fakeExecuteFunctions';
 
@@ -12,31 +12,23 @@ function ok(body: unknown): FakeHttpResponse {
 	return { statusCode: 200, body: JSON.stringify(body) };
 }
 
-describe('isMutatingCommand', () => {
-	it('flags put*/del* commands', () => {
-		expect(isMutatingCommand('putOrderV2')).toBe(true);
-		expect(isMutatingCommand('deleteOrder')).toBe(true);
-	});
-
-	it('does not flag reads, even ones containing "update" as a substring', () => {
-		expect(isMutatingCommand('getOPQ')).toBe(false);
-		expect(isMutatingCommand('addStockList')).toBe(false); // routing concern only checks put/del
-	});
-});
-
 describe('makeRequest — fixedV2/fixedV1 (the two proven trading mutations)', () => {
-	it('fixedV2 hits the v2/cmd endpoint and never falls back, even on 404', async () => {
+	it('fixedV2 hits the plain v1-shaped endpoint and never falls back, even on 404', async () => {
+		// There is no working /api/v2/cmd/{command} shape under this header-HMAC auth scheme —
+		// confirmed live 2026-09-11 (T09 migration testing): it returns "Invalid signature
+		// provided" regardless of auth correctness. fixedV2 resolves to the same endpoint as
+		// fixedV1; see the RequestStrategy doc comment.
 		const { ctx, httpCalls } = createFakeExecuteFunctions({
 			params: {},
 			httpRequest: async () => ({ statusCode: 404, body: JSON.stringify({ error: 'Command not found' }) }),
 		});
 
 		await expect(
-			makeRequest.call(ctx, 'putOrderV2', { qty: 1 }, API_KEY_AUTH, 'fixedV2'),
-		).rejects.toThrow(/rejected "putOrderV2"/);
+			makeRequest.call(ctx, 'putTradeOrder', { qty: 1 }, API_KEY_AUTH, 'fixedV2'),
+		).rejects.toThrow(/rejected "putTradeOrder"/);
 
 		expect(httpCalls).toHaveLength(1);
-		expect(httpCalls[0].url).toBe('https://freedom24.com/api/v2/cmd/putOrderV2');
+		expect(httpCalls[0].url).toBe('https://freedom24.com/api/putTradeOrder');
 	});
 
 	it('fixedV1 hits the plain v1 endpoint and never falls back', async () => {
@@ -76,13 +68,14 @@ describe('makeRequest — auto strategy fallback', () => {
 		expect(httpCalls[1].qs).toBeDefined();
 	});
 
-	it('a command that looks mutating tries v2 first, falls back to v1 on 404, then to wrapped', async () => {
+	it('a put-prefixed command gets no special v2 treatment — goes straight to v1, falls back to wrapped on 404', async () => {
+		// There is no working v2 endpoint to try first (see the RequestStrategy doc comment) — a
+		// put/del-prefixed command via 'auto' behaves identically to any other command.
 		const seenUrls: string[] = [];
 		const { ctx, httpCalls } = createFakeExecuteFunctions({
 			params: {},
 			httpRequest: async (opts) => {
 				seenUrls.push(opts.url);
-				if (opts.url.includes('/v2/cmd/')) return { statusCode: 404, body: '{}' };
 				if (opts.url === 'https://freedom24.com/api/putSomethingUnknown') {
 					return { statusCode: 404, body: '{}' };
 				}
@@ -93,9 +86,8 @@ describe('makeRequest — auto strategy fallback', () => {
 		const result = await makeRequest.call(ctx, 'putSomethingUnknown', {}, API_KEY_AUTH, 'auto');
 
 		expect(result).toEqual({ ok: true });
-		expect(httpCalls).toHaveLength(3);
-		expect(seenUrls[0]).toContain('/v2/cmd/putSomethingUnknown');
-		expect(seenUrls[1]).toBe('https://freedom24.com/api/putSomethingUnknown');
+		expect(httpCalls).toHaveLength(2);
+		expect(seenUrls[0]).toBe('https://freedom24.com/api/putSomethingUnknown');
 	});
 
 	it('does NOT fall back on a 500 (only 404/"Command not found" trigger fallback)', async () => {
@@ -129,7 +121,7 @@ describe('makeRequest — response-body error detection', () => {
 			httpRequest: async () => ok({ errMsg: 'Insufficient funds' }),
 		});
 
-		await expect(makeRequest.call(ctx, 'putOrderV2', {}, API_KEY_AUTH, 'fixedV2')).rejects.toThrow(
+		await expect(makeRequest.call(ctx, 'putTradeOrder', {}, API_KEY_AUTH, 'fixedV2')).rejects.toThrow(
 			/Insufficient funds/,
 		);
 	});

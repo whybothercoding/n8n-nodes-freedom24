@@ -1,8 +1,8 @@
 # n8n-nodes-freedom24
 
-Published n8n community node (`@indiegoweb/n8n-nodes-freedom24`, npm 0.2.6) for the Freedom24/Tradernet trading API. Works as a workflow node and an AI-agent tool (`usableAsTool: true`). It is the execution venue for the personal trading system (`_misc/investing-private`), so real orders move through it.
+Published n8n community node (`@indiegoweb/n8n-nodes-freedom24`, npm 0.2.6) for the Freedom24/Tradernet trading API. Works as a workflow node and an AI-agent tool (`usableAsTool: true`). It is the execution venue for the personal trading system (`misc/investing-private`), so real orders move through it.
 
-Belongs to the personal trading entity; IndieGoWeb Ltd stack rules don't apply here. This file's facts override tier 1.
+Belongs to the personal trading entity. This file's facts override the entity and root tiers.
 
 **History & reference (not loaded at start):** `docs/context-history.md` — pre-2026-09-30 detail: the n8n Creator Portal reviewer credential-testing evidence, package-rename/first-publish notes, 2026-09 dependency and audit write-ups.
 
@@ -38,8 +38,8 @@ Belongs to the personal trading entity; IndieGoWeb Ltd stack rules don't apply h
 - No retry/backoff: `setTimeout`/`setInterval` are banned globals in sandboxed community nodes, and a same-tick retry on 429 just hits the limit again. Failures surface immediately.
 - Dependency holds: `typescript` 5.9.3 (TS 7 crashes the `@typescript-eslint` bundled in `@n8n/node-cli`, peer range `<6.1`) and `eslint` 9.39.5 (ESLint 10 crashes `eslint-plugin-n8n-nodes-base` 1.x, which calls the removed `context.getFilename()`). Check both against the current `@n8n/node-cli` before bumping.
 - Don't add `overrides` to `package.json` to clear `npm audit`: `no-overrides-field` is an ERROR-level lint rule, and overrides don't affect an installed community node anyway. The remaining moderate findings sit in `@n8n/node-cli`'s dev-dependency subtree and don't ship in `dist/`.
-- `engines.node` stays `>=20.0.0`: the real runtime is whatever Node the live n8n image bundles. This is a tracked variant (`n8n_node_package_engines_node` in `~/Documents/systems/npm-dependency-policy/variants.yaml`).
-- Before editing `ci.yml`, `publish.yml`, `allowScripts` or `engines`, read `~/Documents/systems/npm-dependency-policy/CONTRACT.md` (and `n8n-node-package-skeleton`). The Node 20.x CI leg deliberately runs `npm ci --ignore-scripts` on npm 10.8.2 (npm < 12 has no script-approval gate).
+- `engines.node` stays `>=20.0.0`: the real runtime is whatever Node the live n8n image bundles. This is a tracked variant (`n8n_node_package_engines_node` in `~/Documents/indiegoweb/indiegoweb-ltd/systems/npm-dependency-policy/variants.yaml`).
+- Before editing `ci.yml`, `publish.yml`, `allowScripts` or `engines`, read `~/Documents/indiegoweb/indiegoweb-ltd/systems/npm-dependency-policy/CONTRACT.md` (and `n8n-node-package-skeleton`). The Node 20.x CI leg deliberately runs `npm ci --ignore-scripts` on npm 10.8.2 (npm < 12 has no script-approval gate).
 
 ## Trading safety
 

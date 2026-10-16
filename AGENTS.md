@@ -1,8 +1,8 @@
 # n8n-nodes-freedom24
 
-Published n8n community node (`@indiegoweb/n8n-nodes-freedom24`, npm 0.2.6) for the Freedom24/Tradernet trading API. Works as a workflow node and an AI-agent tool (`usableAsTool: true`). It is the execution venue for the personal trading system (`misc/investing-private`), so real orders move through it.
+Published n8n community node (`@indiegoweb/n8n-nodes-freedom24`, npm 0.2.6) for the Freedom24/Tradernet trading API. Works as a workflow node and an AI-agent tool (`usableAsTool: true`). It is the execution venue for the personal trading system (`indiegoweb/misc/investing-private`), so real orders move through it.
 
-Belongs to the personal trading entity. This file's facts override the entity and root tiers.
+Published under the IndieGoWeb Ltd npm scope, but it serves the personal trading system (`~/Documents/indiegoweb/misc/investing-private`, whose firewall rules apply to that side). This file's facts override the entity and root tiers.
 
 **History & reference (not loaded at start):** `docs/context-history.md` — pre-2026-09-30 detail: the n8n Creator Portal reviewer credential-testing evidence, package-rename/first-publish notes, 2026-09 dependency and audit write-ups.
 
